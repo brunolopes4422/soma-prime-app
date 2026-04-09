@@ -11,8 +11,7 @@ const guideCards = [
     icon: Users,
     title: "CS / Atendimento",
     desc: "Fluxo de atendimento, scripts, ferramentas e rotinas do setor de Customer Success.",
-    color: "from-amber-500/10 to-amber-600/5",
-    border: "border-amber-500/20",
+
   },
   {
     module: "fiscal",

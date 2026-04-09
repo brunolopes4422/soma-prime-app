@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { getTheme } from "../styles/themes";
 import type { CompanyKey } from "../styles/themes";
-import { Users, FileText, Calculator, BookOpen, LayoutDashboard, ArrowRight } from "lucide-react";
+import { Users, FileText, Calculator, LayoutDashboard, ArrowRight } from "lucide-react";
 
 const guideCards = [
   {

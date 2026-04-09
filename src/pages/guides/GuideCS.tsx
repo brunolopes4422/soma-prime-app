@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Users, Workflow, Wrench, FileCheck, HelpCircle, CheckCircle2, XCircle, ChevronDown, Search } from "lucide-react";
 import GuideLayout from "../../components/ui/GuideLayout";
 import GuideCard from "../../components/ui/GuideCard";
+import VideoCard from "../../components/ui/VideoCard";
 import { useChecklist } from "../../hooks/useChecklist";
 import { useQuiz } from "../../hooks/useQuiz";
 
@@ -122,6 +123,29 @@ function Quiz({ questions, guide, tab }: {
 function TabFluxo() {
   return (
     <div className="space-y-6">
+      {/* Vídeos da aba */}
+      <div>
+        <h3 className="font-bold text-sm mb-3">🎬 Aulas em vídeo</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <VideoCard
+            videoId="cs-fluxo-atendimento"
+            title="Fluxo de Atendimento na Prática"
+            description="Aprenda o passo a passo completo do atendimento ao cliente do início ao fim."
+            duration="12 min"
+            instructor="CS Sênior"
+            videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          />
+          <VideoCard
+            videoId="cs-gclick-tutorial"
+            title="Como usar o GClick corretamente"
+            description="Tutorial completo de abertura e gestão de tickets no GClick."
+            duration="8 min"
+            instructor="CS Sênior"
+            videoUrl="https://www.youtube.com/watch?v=3rfaE8VrjII&list=PLT_nh7d0FvPWYwOphdZv1wEwrTP52usIk"
+          />
+        </div>
+      </div>
+
       <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 text-sm text-soma-text/70 leading-relaxed">
         📋 O fluxo de atendimento é o coração do CS. Seguir a ordem correta garante qualidade, rastreabilidade e satisfação do cliente. <strong>Nunca pule etapas.</strong>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Briefcase, Workflow, Calendar, ClipboardList, HelpCircle, CheckCircle2, ChevronDown, Search, XCircle } from "lucide-react";
 import GuideLayout from "../../components/ui/GuideLayout";
 import GuideCard from "../../components/ui/GuideCard";
+import VideoCard from "../../components/ui/VideoCard";
 import { useChecklist } from "../../hooks/useChecklist";
 import { useQuiz } from "../../hooks/useQuiz";
 
@@ -108,6 +109,28 @@ function Quiz({ questions, guide, tab }: {
 function TabRotina() {
   return (
     <div className="space-y-6">
+      <div>
+        <h3 className="font-bold text-sm mb-3">🎬 Aulas em vídeo</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <VideoCard
+            videoId="dp-rotina-diaria"
+            title="Rotina Diária do DP"
+            description="Como organizar admissões, demissões e folha sem perder nenhum prazo."
+            duration="12 min"
+            instructor="Analista DP Sênior"
+            comingSoon
+          />
+          <VideoCard
+            videoId="dp-esocial-pratica"
+            title="eSocial na Prática"
+            description="Aprenda a transmitir os principais eventos do eSocial corretamente."
+            duration="18 min"
+            instructor="Analista DP Sênior"
+            comingSoon
+          />
+        </div>
+      </div>
+
       <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 text-sm text-soma-text/70">
         👥 O DP lida com a vida das pessoas — admissões, demissões, férias e salários. <strong>Cada erro aqui afeta diretamente o bolso do colaborador do cliente.</strong>
       </div>

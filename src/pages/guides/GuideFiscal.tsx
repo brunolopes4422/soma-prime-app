@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FileText, Workflow, Calendar, ClipboardList, HelpCircle, CheckCircle2, ChevronDown, Search, XCircle } from "lucide-react";
 import GuideLayout from "../../components/ui/GuideLayout";
 import GuideCard from "../../components/ui/GuideCard";
+import VideoCard from "../../components/ui/VideoCard";
 import { useChecklist } from "../../hooks/useChecklist";
 import { useQuiz } from "../../hooks/useQuiz";
 
@@ -112,6 +113,28 @@ function Quiz({ questions, guide, tab }: {
 function TabRotina() {
   return (
     <div className="space-y-6">
+      <div>
+        <h3 className="font-bold text-sm mb-3">🎬 Aulas em vídeo</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <VideoCard
+            videoId="fiscal-rotina-diaria"
+            title="Rotina Diária do Fiscal"
+            description="Como organizar o dia a dia do departamento fiscal sem perder prazos."
+            duration="10 min"
+            instructor="Analista Fiscal Sênior"
+            comingSoon
+          />
+          <VideoCard
+            videoId="fiscal-calendario"
+            title="Calendário Fiscal na Prática"
+            description="Entenda todos os prazos mensais e anuais do setor fiscal."
+            duration="15 min"
+            instructor="Analista Fiscal Sênior"
+            comingSoon
+          />
+        </div>
+      </div>
+
       <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 text-sm text-soma-text/70">
         📋 A rotina fiscal exige atenção constante aos prazos. Um único atraso pode gerar multa para o cliente. <strong>Consulte o calendário fiscal todos os dias.</strong>
       </div>

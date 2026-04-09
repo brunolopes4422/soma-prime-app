@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
-import { Users, CheckCircle2, Trophy, AlertCircle, TrendingUp } from "lucide-react";
+import { Users, CheckCircle2, Trophy, AlertCircle} from "lucide-react";
 
 interface TeamMember {
   id: string;

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Calculator, CreditCard, TrendingUp, HelpCircle, ChevronDown, Search, CheckCircle2, Copy, Check } from "lucide-react";
+import { Calculator, CreditCard, TrendingUp, HelpCircle, ChevronDown, Search, CheckCircle2} from "lucide-react";
 import GuideLayout from "../../components/ui/GuideLayout";
-import GuideCard from "../../components/ui/GuideCard";
+
 
 // ─── COMPONENTES REUTILIZÁVEIS ───────────────────────────────────────────────
 function Steps({ items }: { items: { title: string; desc: string; tip?: string; warn?: string }[] }) {

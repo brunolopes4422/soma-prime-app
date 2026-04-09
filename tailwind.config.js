@@ -6,21 +6,27 @@ export default {
     extend: {
       colors: {
         gold: {
-          light: "#c9a84c",
-          DEFAULT: "#a8762e",
-          dark: "#7a5520",
-        },
-        ph: {
-          bg: "#0a0a08",
-          card: "#111008",
-          border: "#2a2820",
-          text: "#e8e4d8",
+          light:   "#f5a623",
+          DEFAULT: "#c9a84c",
+          dark:    "#a07830",
         },
         soma: {
-          bg: "#f7f5f0",
-          card: "#ffffff",
-          border: "#ddd8cc",
-          text: "#1a1610",
+          bg:      "#000000",   // preto puro
+          card:    "#0d0d0d",   // card quase igual ao fundo
+          border:  "#f5a623",   // borda DOURADA visível como no PDF
+          text:    "#ffffff",   // branco puro
+          muted:   "#aaaaaa",   // cinza claro legível
+          success: "#4ade80",
+          danger:  "#f87171",
+          info:    "#60a5fa",
+          warning: "#fbbf24",
+        },
+        ph: {
+          bg:      "#000000",
+          card:    "#0d0d0d",
+          border:  "#f5a623",
+          text:    "#ffffff",
+          muted:   "#aaaaaa",
         },
       },
       fontFamily: {

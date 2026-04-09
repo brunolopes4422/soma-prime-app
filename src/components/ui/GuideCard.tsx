@@ -8,7 +8,7 @@ interface GuideCardProps {
   subtitle?: string;
   modalTitle?: string;
   modalSubtitle?: string;
-  children?: React.ReactNode; // conteúdo do modal
+  children?: React.ReactNode;
   badge?: string;
   badgeColor?: string;
 }
@@ -21,7 +21,7 @@ export default function GuideCard({
   modalSubtitle,
   children,
   badge,
-  badgeColor = "bg-gold/10 text-gold border-gold/20",
+  badgeColor = "bg-gold-light/10 text-gold-light border-gold-light/20",
 }: GuideCardProps) {
   const [open, setOpen] = useState(false);
   const hasModal = !!children;
@@ -30,26 +30,26 @@ export default function GuideCard({
     <>
       <button
         onClick={() => hasModal && setOpen(true)}
-        className={`w-full text-left card-base border border-soma-border bg-white
+        className={`w-full text-left card-base border border-ph-border bg-ph-card
                     flex items-center gap-4 group transition-all duration-200
-                    ${hasModal ? "hover:border-gold/40 hover:shadow-sm cursor-pointer" : "cursor-default"}`}
+                    ${hasModal ? "hover:border-gold-light/40 hover:shadow-sm cursor-pointer" : "cursor-default"}`}
       >
         <span className="text-2xl">{icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-soma-text">{title}</span>
+            <span className="font-semibold text-sm text-ph-text">{title}</span>
             {badge && (
               <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${badgeColor}`}>
                 {badge}
               </span>
             )}
           </div>
-          {subtitle && <p className="text-xs text-soma-text/50 mt-0.5 truncate">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-ph-text/50 mt-0.5 truncate">{subtitle}</p>}
         </div>
         {hasModal && (
           <ChevronRight
             size={16}
-            className="text-soma-text/30 group-hover:text-gold transition-colors shrink-0"
+            className="text-ph-text/30 group-hover:text-gold-light transition-colors shrink-0"
           />
         )}
       </button>

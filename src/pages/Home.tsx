@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { getTheme } from "../styles/themes";
 import type { CompanyKey } from "../styles/themes";
-import { Users, FileText, Calculator, LayoutDashboard, ArrowRight } from "lucide-react";
+import { Users, FileText, Calculator, BookOpen, LayoutDashboard, ArrowRight } from "lucide-react";
 
 const guideCards = [
   {
@@ -77,8 +77,9 @@ export default function Home() {
             <button
               key={to}
               onClick={() => navigate(to)}
-              className={`card-base border text-left group hover:scale-[1.02] hover:shadow-md
-                          bg-gradient-to-br ${color} ${border}`}
+              className="card-base border border-soma-border/30 bg-soma-card text-left group 
+                         hover:border-gold-light hover:shadow-lg hover:shadow-gold-light/10
+                         transition-all duration-200"
             >
               <div className="flex items-start gap-4">
                 <div className={`p-2.5 rounded-lg bg-gold/10 ${theme.accent}`}>

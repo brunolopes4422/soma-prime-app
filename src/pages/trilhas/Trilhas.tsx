@@ -100,10 +100,10 @@ export default function Trilhas() {
           { label: "Certificados obtidos", value: certificates.length, icon: "🏆" },
           { label: "Em progresso", value: trilhas.length - certificates.length, icon: "⚡" },
         ].map(({ label, value, icon }) => (
-          <div key={label} className="card-base border border-soma-border bg-white text-center">
+          <div key={label} className="card-base border border-soma-border/30 bg-soma-card text-center">
             <span className="text-2xl">{icon}</span>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-            <p className="text-xs opacity-50 mt-0.5">{label}</p>
+            <p className="text-2xl font-bold mt-1 text-soma-text">{value}</p>
+            <p className="text-xs text-soma-muted mt-0.5">{label}</p>
           </div>
         ))}
       </div>
@@ -125,9 +125,11 @@ export default function Trilhas() {
                   onClick={() => !isLocked && navigate(`/trilhas/${trilha.id}`)}
                   disabled={isLocked}
                   className={`w-full text-left card-base border group transition-all duration-200
-                    ${isCompleted ? "border-green-400/50 bg-green-50/30 hover:border-green-400"
-                      : isLocked ? "border-soma-border bg-soma-bg opacity-50 cursor-not-allowed"
-                      : "border-soma-border bg-white hover:border-gold/40 hover:shadow-sm"}`}
+                    ${isCompleted
+                      ? "border-green-500/30 bg-soma-card hover:border-green-500/60"
+                      : isLocked
+                        ? "border-soma-border/20 bg-soma-card opacity-40 cursor-not-allowed"
+                        : "border-soma-border/30 bg-soma-card hover:border-gold-light/60 hover:shadow-lg hover:shadow-gold-light/5"}`}
                 >
                   <div className="flex items-center gap-4">
                     {/* Ícone status */}

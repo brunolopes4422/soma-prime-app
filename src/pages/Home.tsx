@@ -11,7 +11,8 @@ const guideCards = [
     icon: Users,
     title: "CS / Atendimento",
     desc: "Fluxo de atendimento, scripts, ferramentas e rotinas do setor de Customer Success.",
-
+    color: "from-amber-500/10 to-amber-600/5",
+    border: "border-amber-500/20",
   },
   {
     module: "fiscal",
@@ -72,7 +73,7 @@ export default function Home() {
       <div>
         <h2 className="text-xs uppercase tracking-widest opacity-40 mb-4">Guias disponíveis</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {availableGuides.map(({ to, icon: Icon, title, desc, color, border }) => (
+          {availableGuides.map(({ to, icon: Icon, title, desc }) => (
             <button
               key={to}
               onClick={() => navigate(to)}

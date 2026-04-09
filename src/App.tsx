@@ -9,6 +9,8 @@ import GuideFiscal from "./pages/guides/GuideFiscal";
 import GuideDP from "./pages/guides/GuideDP";
 import GuideOMIE from "./pages/guides/GuideOMIE";
 import ComingSoon from "./pages/ComingSoon";
+import Trilhas from "./pages/trilhas/Trilhas";
+import TrilhaDetail from "./pages/trilhas/TrilhaDetail";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -48,6 +50,8 @@ export default function App() {
 
             {/* Em breve — novos módulos caem aqui até ficarem prontos */}
             <Route path="guias/*"       element={<ComingSoon />} />
+            <Route path="trilhas"        element={<Trilhas />} />
+            <Route path="trilhas/:id"    element={<TrilhaDetail />} />
 
             <Route path="dashboard" element={
               <ManagerRoute>

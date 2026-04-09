@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Home, FileText, Users, Calculator } from "lucide-react";
+import { BookOpen, LayoutDashboard, Home, FileText, Users, Calculator } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import type { Theme } from "../../styles/themes";
 
@@ -44,6 +44,11 @@ export default function Sidebar({ theme }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <NavLink to="/" end className={linkClass}>
           <Home size={18} /> Início
+        </NavLink>
+
+        <p className="px-4 pt-4 pb-1 text-xs uppercase opacity-40 tracking-widest">Escola</p>
+        <NavLink to="/trilhas" className={linkClass}>
+          <BookOpen size={18} /> Trilhas de Carreira
         </NavLink>
 
         <p className="px-4 pt-4 pb-1 text-xs uppercase opacity-40 tracking-widest">Guias</p>

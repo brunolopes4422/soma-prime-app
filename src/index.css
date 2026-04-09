@@ -4,164 +4,93 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@import "tw-animate-css";
-
-@import "shadcn/tailwind.css";
-
-@import "@fontsource-variable/geist";
-
 @layer base {
-  body { @apply antialiased bg-background text-foreground; }
-  .theme {
-
-    --font-heading: var(--font-sans);
-
-    --font-sans: 'Geist Variable', sans-serif
-  }
   :root {
+    /* Tema claro */
+    --background:        0 0% 98%;
+    --foreground:        0 0% 8%;
+    --card:              0 0% 100%;
+    --card-foreground:   0 0% 8%;
+    --border:            0 0% 88%;
+    --input:             0 0% 88%;
+    --primary:           38 91% 55%;      /* dourado */
+    --primary-foreground: 0 0% 100%;
+    --secondary:         0 0% 94%;
+    --secondary-foreground: 0 0% 20%;
+    --muted:             0 0% 94%;
+    --muted-foreground:  0 0% 45%;
+    --accent:            38 91% 55%;
+    --accent-foreground: 0 0% 100%;
+    --ring:              38 91% 55%;
+    --radius:            0.75rem;
 
-    --background: oklch(1 0 0);
-
-    --foreground: oklch(0.145 0 0);
-
-    --card: oklch(1 0 0);
-
-    --card-foreground: oklch(0.145 0 0);
-
-    --popover: oklch(1 0 0);
-
-    --popover-foreground: oklch(0.145 0 0);
-
-    --primary: oklch(0.205 0 0);
-
-    --primary-foreground: oklch(0.985 0 0);
-
-    --secondary: oklch(0.97 0 0);
-
-    --secondary-foreground: oklch(0.205 0 0);
-
-    --muted: oklch(0.97 0 0);
-
-    --muted-foreground: oklch(0.556 0 0);
-
-    --accent: oklch(0.97 0 0);
-
-    --accent-foreground: oklch(0.205 0 0);
-
-    --destructive: oklch(0.577 0.245 27.325);
-
-    --border: oklch(0.922 0 0);
-
-    --input: oklch(0.922 0 0);
-
-    --ring: oklch(0.708 0 0);
-
-    --chart-1: oklch(0.87 0 0);
-
-    --chart-2: oklch(0.556 0 0);
-
-    --chart-3: oklch(0.439 0 0);
-
-    --chart-4: oklch(0.371 0 0);
-
-    --chart-5: oklch(0.269 0 0);
-
-    --radius: 0.625rem;
-
-    --sidebar: oklch(0.985 0 0);
-
-    --sidebar-foreground: oklch(0.145 0 0);
-
-    --sidebar-primary: oklch(0.205 0 0);
-
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-
-    --sidebar-accent: oklch(0.97 0 0);
-
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-
-    --sidebar-border: oklch(0.922 0 0);
-
-    --sidebar-ring: oklch(0.708 0 0)
+    /* Cores Soma Prime — tema claro */
+    --soma-gold:         #f5a623;
+    --soma-gold-dark:    #c9a84c;
+    --soma-text:         #1a1610;
+    --soma-muted:        #666660;
+    --soma-bg:           #f7f5f0;
+    --soma-card:         #ffffff;
+    --soma-border:       #e0ddd5;
   }
+
   .dark {
+    /* Tema escuro */
+    --background:        0 0% 4%;
+    --foreground:        0 0% 98%;
+    --card:              0 0% 7%;
+    --card-foreground:   0 0% 98%;
+    --border:            0 0% 16%;
+    --input:             0 0% 16%;
+    --primary:           38 91% 55%;
+    --primary-foreground: 0 0% 8%;
+    --secondary:         0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
+    --muted:             0 0% 12%;
+    --muted-foreground:  0 0% 60%;
+    --accent:            38 91% 55%;
+    --accent-foreground: 0 0% 8%;
+    --ring:              38 91% 55%;
 
-    --background: oklch(0.145 0 0);
-
-    --foreground: oklch(0.985 0 0);
-
-    --card: oklch(0.205 0 0);
-
-    --card-foreground: oklch(0.985 0 0);
-
-    --popover: oklch(0.205 0 0);
-
-    --popover-foreground: oklch(0.985 0 0);
-
-    --primary: oklch(0.922 0 0);
-
-    --primary-foreground: oklch(0.205 0 0);
-
-    --secondary: oklch(0.269 0 0);
-
-    --secondary-foreground: oklch(0.985 0 0);
-
-    --muted: oklch(0.269 0 0);
-
-    --muted-foreground: oklch(0.708 0 0);
-
-    --accent: oklch(0.269 0 0);
-
-    --accent-foreground: oklch(0.985 0 0);
-
-    --destructive: oklch(0.704 0.191 22.216);
-
-    --border: oklch(1 0 0 / 10%);
-
-    --input: oklch(1 0 0 / 15%);
-
-    --ring: oklch(0.556 0 0);
-
-    --chart-1: oklch(0.87 0 0);
-
-    --chart-2: oklch(0.556 0 0);
-
-    --chart-3: oklch(0.439 0 0);
-
-    --chart-4: oklch(0.371 0 0);
-
-    --chart-5: oklch(0.269 0 0);
-
-    --sidebar: oklch(0.205 0 0);
-
-    --sidebar-foreground: oklch(0.985 0 0);
-
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-
-    --sidebar-accent: oklch(0.269 0 0);
-
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-
-    --sidebar-border: oklch(1 0 0 / 10%);
-
-    --sidebar-ring: oklch(0.556 0 0)
+    /* Cores Soma Prime — tema escuro */
+    --soma-gold:         #f5a623;
+    --soma-gold-dark:    #c9a84c;
+    --soma-text:         #ffffff;
+    --soma-muted:        #aaaaaa;
+    --soma-bg:           #000000;
+    --soma-card:         #0d0d0d;
+    --soma-border:       #2a2a28;
   }
-  * {
-    @apply border-border outline-ring/50;
-  }
-  html {
-    @apply font-sans;
+
+  body {
+    @apply antialiased;
+    background-color: var(--soma-bg);
+    color: var(--soma-text);
+    font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
 @layer components {
-  .btn-gold {
-    @apply bg-gold-light text-white font-semibold px-4 py-2 rounded-lg
-           hover:bg-gold transition-colors duration-200;
-  }
   .card-base {
     @apply rounded-xl border p-5 transition-all duration-200;
+    background-color: var(--soma-card);
+    border-color: var(--soma-border);
   }
+
+  .btn-gold {
+    @apply font-semibold px-4 py-2 rounded-lg transition-colors duration-200;
+    background-color: var(--soma-gold);
+    color: #000;
+  }
+
+  .btn-gold:hover {
+    background-color: var(--soma-gold-dark);
+  }
+
+  .text-soma { color: var(--soma-text); }
+  .text-soma-muted { color: var(--soma-muted); }
+  .bg-soma { background-color: var(--soma-bg); }
+  .bg-soma-card { background-color: var(--soma-card); }
+  .border-soma { border-color: var(--soma-border); }
 }

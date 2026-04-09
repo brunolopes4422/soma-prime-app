@@ -4,55 +4,25 @@ import GuideLayout from "../../components/ui/GuideLayout";
 import GuideCard from "../../components/ui/GuideCard";
 import VideoCard from "../../components/ui/VideoCard";
 import { useChecklist } from "../../hooks/useChecklist";
-import { useQuiz } from "../../hooks/useQuiz";
+import Quiz from "../../components/ui/Quiz";
+import Steps from "../../components/ui/Steps";
+
 
 // ─── COMPONENTES REUTILIZÁVEIS ───────────────────────────────────────────────
-function Steps({ items }: { items: { title: string; desc: string; tip?: string }[] }) {
-  const [active, setActive] = useState<number | null>(null);
-  return (
-    <div className="space-y-2">
-      {items.map((item, i) => {
-        const open = active === i;
-        return (
-          <button key={i} onClick={() => setActive(open ? null : i)} className="w-full text-left">
-            <div className={`rounded-xl border transition-all duration-200 overflow-hidden
-              ${open ? "border-gold bg-gold/5" : "border-soma-border bg-white hover:border-gold/40"}`}>
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0
-                  ${open ? "bg-gold text-white" : "bg-soma-bg text-soma-text/50"}`}>{i + 1}</span>
-                <span className="font-semibold text-sm flex-1">{item.title}</span>
-                <ChevronDown size={16} className={`opacity-40 transition-transform ${open ? "rotate-180" : ""}`} />
-              </div>
-              {open && (
-                <div className="px-4 pb-4 space-y-2 border-t border-gold/20 pt-3">
-                  <p className="text-sm opacity-70 leading-relaxed">{item.desc}</p>
-                  {item.tip && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
-                      💡 <strong>Dica:</strong> {item.tip}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+
 
 function CertoErrado({ items }: { items: { certo: string; errado: string }[] }) {
   return (
     <div className="space-y-3">
       {items.map(({ certo, errado }, i) => (
         <div key={i} className="grid grid-cols-2 gap-2">
-          <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-green-700"><CheckCircle2 size={14} /> Certo</div>
-            <p className="text-green-800 leading-relaxed">{certo}</p>
+          <div className="rounded-xl p-3 text-xs space-y-1" style={{ backgroundColor: "#16a34a", border: "1px solid #15803d" }}>
+            <div className="flex items-center gap-1.5 font-bold text-white"><CheckCircle2 size={14} /> Certo</div>
+            <p className="text-white/90 leading-relaxed">{certo}</p>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-red-700"><XCircle size={14} /> Errado</div>
-            <p className="text-red-800 leading-relaxed">{errado}</p>
+          <div className="rounded-xl p-3 text-xs space-y-1" style={{ backgroundColor: "#dc2626", border: "1px solid #b91c1c" }}>
+            <div className="flex items-center gap-1.5 font-bold text-white"><XCircle size={14} /> Errado</div>
+            <p className="text-white/90 leading-relaxed">{errado}</p>
           </div>
         </div>
       ))}
@@ -60,54 +30,6 @@ function CertoErrado({ items }: { items: { certo: string; errado: string }[] }) 
   );
 }
 
-function Quiz({ questions, guide, tab }: {
-  questions: { q: string; options: string[]; correct: number; explanation: string }[];
-  guide: string; tab: string;
-}) {
-  const { answers, showResult, answer, submit, reset } = useQuiz(guide, tab);
-  const score = questions.filter((q, i) => answers[i] === q.correct).length;
-  return (
-    <div className="space-y-4">
-      {questions.map((q, qi) => (
-        <div key={qi} className="card-base border border-soma-border bg-white space-y-3">
-          <p className="font-semibold text-sm">{qi + 1}. {q.q}</p>
-          <div className="space-y-2">
-            {q.options.map((opt, oi) => {
-              const selected = answers[qi] === oi;
-              const isCorrect = q.correct === oi;
-              let cls = "border-soma-border bg-soma-bg text-soma-text/70";
-              if (showResult && isCorrect) cls = "border-green-400 bg-green-50 text-green-800 font-semibold";
-              else if (showResult && selected && !isCorrect) cls = "border-red-400 bg-red-50 text-red-800 line-through";
-              else if (selected) cls = "border-gold bg-gold/10 text-gold font-semibold";
-              return (
-                <button key={oi} disabled={showResult} onClick={() => answer(qi, oi)}
-                  className={`w-full text-left text-xs px-3 py-2.5 rounded-lg border transition-all ${cls}`}>
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
-          {showResult && <p className="text-xs bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-blue-800">💬 {q.explanation}</p>}
-        </div>
-      ))}
-      {!showResult ? (
-        <button onClick={() => submit(questions)} disabled={Object.keys(answers).length < questions.length}
-          className="w-full py-2.5 rounded-xl bg-gold text-white font-semibold text-sm disabled:opacity-40 hover:bg-gold-dark transition-colors">
-          Verificar respostas
-        </button>
-      ) : (
-        <div className={`rounded-xl p-4 text-center border font-semibold text-sm
-          ${score === questions.length ? "bg-green-50 border-green-300 text-green-800"
-            : score >= questions.length / 2 ? "bg-yellow-50 border-yellow-300 text-yellow-800"
-            : "bg-red-50 border-red-300 text-red-800"}`}>
-          {score === questions.length ? "🏆 Perfeito!" : score >= questions.length / 2 ? "👍 Bom!" : "📚 Revise o conteúdo!"}&nbsp;
-          {score}/{questions.length} corretas
-          <button onClick={reset} className="block mx-auto mt-2 text-xs underline opacity-60">Tentar novamente</button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── ABA 1 — ROTINA DIÁRIA ──────────────────────────────────────────────────
 function TabRotina() {

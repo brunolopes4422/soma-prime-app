@@ -126,10 +126,10 @@ export default function Trilhas() {
                   disabled={isLocked}
                   className={`w-full text-left card-base border group transition-all duration-200
                     ${isCompleted
-                      ? "border-green-500/30 bg-soma-card hover:border-green-500/60"
+                      ? "border-green-500/30 hover:border-green-500/60"
                       : isLocked
-                        ? "border-soma-border/20 bg-soma-card opacity-40 cursor-not-allowed"
-                        : "border-soma-border/30 bg-soma-card hover:border-gold-light/60 hover:shadow-lg hover:shadow-gold-light/5"}`}
+                        ? "opacity-40 cursor-not-allowed"
+                        : "hover:border-gold-light/60 hover:shadow-lg hover:shadow-gold-light/5"}`}
                 >
                   <div className="flex items-center gap-4">
                     {/* Ícone status */}

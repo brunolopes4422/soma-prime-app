@@ -10,27 +10,31 @@ export default {
           DEFAULT: "#c9a84c",
           dark:    "#a07830",
         },
+        // Cores dinâmicas via CSS variables — mudam com o tema
         soma: {
-          bg:      "#000000",   // preto puro
-          card:    "#0d0d0d",   // card quase igual ao fundo
-          border:  "#f5a623",   // borda DOURADA visível como no PDF
-          text:    "#ffffff",   // branco puro
-          muted:   "#aaaaaa",   // cinza claro legível
-          success: "#4ade80",
-          danger:  "#f87171",
-          info:    "#60a5fa",
-          warning: "#fbbf24",
+          bg:      "var(--soma-bg)",
+          card:    "var(--soma-card)",
+          border:  "var(--soma-border)",
+          text:    "var(--soma-text)",
+          muted:   "var(--soma-muted)",
+          gold:    "var(--soma-gold)",
         },
+        // Mantém ph- como alias para retrocompatibilidade
         ph: {
-          bg:      "#000000",
-          card:    "#0d0d0d",
-          border:  "#f5a623",
-          text:    "#ffffff",
-          muted:   "#aaaaaa",
+          bg:     "var(--soma-bg)",
+          card:   "var(--soma-card)",
+          border: "var(--soma-border)",
+          text:   "var(--soma-text)",
+          muted:  "var(--soma-muted)",
         },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
     },
   },

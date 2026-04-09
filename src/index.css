@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  body { @apply antialiased; }
+}
+
+@layer components {
+  .btn-gold {
+    @apply bg-gold text-white font-semibold px-4 py-2 rounded-lg 
+           hover:bg-gold-dark transition-colors duration-200;
+  }
+  .card-base {
+    @apply rounded-xl border p-5 transition-all duration-200;
+  }
+}

@@ -18,6 +18,7 @@ import AdminSectors from "./pages/admin/AdminSectors";
 import SetPassword from "./pages/SetPassword";
 import Profile from "./pages/Profile";
 import AdminGuides from "./pages/admin/AdminGuides";
+import GuideContabil from "./pages/guides/GuideContabil";
 
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="guias/cs"      element={<GuideCS />} />
             <Route path="guias/fiscal"  element={<GuideFiscal />} />
             <Route path="guias/dp"      element={<GuideDP />} />
+            <Route path="guias/contabil" element={<GuideContabil />} />
             <Route path="guias/omie"    element={<GuideOMIE />} />
             <Route path="guias/*"       element={<ComingSoon />} />
             <Route path="trilhas"       element={<Trilhas />} />

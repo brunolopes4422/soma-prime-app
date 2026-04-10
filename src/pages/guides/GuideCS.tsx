@@ -60,11 +60,11 @@ function TabFluxo() {
         <h3 className="font-bold text-sm mb-3" style={{ color: "var(--soma-text)" }}>🔀 Tipo de demanda → Caminho certo</h3>
         <div className="space-y-2">
           {[
-            { tipo: "Dúvida simples", caminho: "CS responde na hora", cor: "#4ade80", bg: "rgba(22,163,74,0.1)", border: "rgba(22,163,74,0.2)" },
-            { tipo: "Solicitação de documento/guia", caminho: "CS emite se levar até 30min — senão cria tarefa no GClick", cor: "#fde047", bg: "rgba(234,179,8,0.1)", border: "rgba(234,179,8,0.2)" },
-            { tipo: "Problema Fiscal/DP/Contábil", caminho: "CS cria tarefa no GClick e encaminha para o setor responsável", cor: "#fdba74", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.2)" },
-            { tipo: "Reclamação / Insatisfação", caminho: "Registra no GClick, informa o gestor ANTES de responder", cor: "#f87171", bg: "rgba(220,38,38,0.1)", border: "rgba(220,38,38,0.2)" },
-            { tipo: "Cancelamento", caminho: "NUNCA confirma ou nega — escala ao gestor imediatamente", cor: "#d8b4fe", bg: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.2)" },
+            { tipo: "Dúvida simples", caminho: "CS responde na hora", cor: "#fff", bg: "#16a34a", border: "#15803d" },
+            { tipo: "Solicitação de documento/guia", caminho: "CS emite se levar até 30min — senão cria tarefa no GClick", cor: "#fff", bg: "#b45309", border: "#92400e" },
+            { tipo: "Problema Fiscal/DP/Contábil", caminho: "CS cria tarefa no GClick e encaminha para o setor responsável", cor: "#fff", bg: "#c2410c", border: "#9a3412" },
+            { tipo: "Reclamação / Insatisfação", caminho: "Registra no GClick, informa o gestor ANTES de responder", cor: "#fff", bg: "#dc2626", border: "#b91c1c" },
+            { tipo: "Cancelamento", caminho: "NUNCA confirma ou nega — escala ao gestor imediatamente", cor: "#fff", bg: "#7c3aed", border: "#6d28d9" },
           ].map(({ tipo, caminho, cor, bg, border }) => (
             <div key={tipo} className="rounded-xl p-3 text-xs flex items-start gap-3" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
               <span className="font-bold shrink-0 w-44" style={{ color: cor }}>{tipo}</span>

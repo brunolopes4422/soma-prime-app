@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen, Settings } from "lucide-react";
+import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { Theme } from "../../styles/themes";

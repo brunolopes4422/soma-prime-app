@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { Plus, X, Check, Pencil, Trash2, ChevronDown } from "lucide-react";
+import { Plus, X, Check, Pencil, Trash2} from "lucide-react";
 
 interface GuideVideo {
   id: string;

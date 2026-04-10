@@ -1,7 +1,7 @@
 // src/components/ui/AcademyAIFloat.tsx
 // Chama Gemini direto do frontend — sem Edge Function
 import { useState, useRef, useEffect } from "react";
-import { Bot, X, Send, Minimize2, Maximize2, Sparkles, Flame } from "lucide-react";
+import { Bot, X, Send, Minimize2, Maximize2, Sparkles } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 
@@ -18,11 +18,6 @@ function getPageContext(pathname: string): string {
   if (pathname.includes("/guias/omie"))     return "Guia OMIE / Financeiro";
   if (pathname.includes("/trilhas"))        return "Trilhas de Carreira — Soma Prime Academy";
   return "Portal Operacional da Soma Prime";
-}
-
-function getSector(pathname: string): string {
-  if (pathname.includes("/guias/")) return pathname.split("/guias/")[1]?.split("/")[0] ?? "cs";
-  return "cs";
 }
 
 const SUGGESTIONS: Record<string, string[]> = {

@@ -2,7 +2,7 @@
 // Fluxograma animado do fluxo de atendimento CS
 
 import { useState } from "react";
-import { CheckCircle2, AlertTriangle, XCircle, Clock, ArrowDown } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 
 const steps = [
   {

@@ -9,6 +9,7 @@ import VideoCard from "../../components/ui/VideoCard";
 import Quiz from "../../components/ui/Quiz";
 import Steps from "../../components/ui/Steps";
 import { useChecklist } from "../../hooks/useChecklist";
+import FluxoAtendimento from "../../components/ui/FluxoAtendimento";
 import { useGuideVideos } from "../../hooks/useGuideVideos";
 
 // ─── COMPONENTES BASE ─────────────────────────────────────────────────────────
@@ -55,24 +56,8 @@ function TabFluxo() {
 
       <InfoBox icon="📋" text="O fluxo de atendimento é o coração do CS." strong="Nunca pule etapas. Cada passo existe por um motivo." />
 
-      {/* Fluxo visual por tipo */}
-      <div>
-        <h3 className="font-bold text-sm mb-3" style={{ color: "var(--soma-text)" }}>🔀 Tipo de demanda → Caminho certo</h3>
-        <div className="space-y-2">
-          {[
-            { tipo: "Dúvida simples", caminho: "CS responde na hora", cor: "#fff", bg: "#16a34a", border: "#15803d" },
-            { tipo: "Solicitação de documento/guia", caminho: "CS emite se levar até 30min — senão cria tarefa no GClick", cor: "#fff", bg: "#b45309", border: "#92400e" },
-            { tipo: "Problema Fiscal/DP/Contábil", caminho: "CS cria tarefa no GClick e encaminha para o setor responsável", cor: "#fff", bg: "#c2410c", border: "#9a3412" },
-            { tipo: "Reclamação / Insatisfação", caminho: "Registra no GClick, informa o gestor ANTES de responder", cor: "#fff", bg: "#dc2626", border: "#b91c1c" },
-            { tipo: "Cancelamento", caminho: "NUNCA confirma ou nega — escala ao gestor imediatamente", cor: "#fff", bg: "#7c3aed", border: "#6d28d9" },
-          ].map(({ tipo, caminho, cor, bg, border }) => (
-            <div key={tipo} className="rounded-xl p-3 text-xs flex items-start gap-3" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
-              <span className="font-bold shrink-0 w-44" style={{ color: cor }}>{tipo}</span>
-              <span style={{ color: cor, opacity: 0.85 }}>→ {caminho}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Fluxograma interativo */}
+      <FluxoAtendimento />
 
       <Steps items={[
         { title: "Receber o contato — SLA: 15 minutos", desc: "Todo contato chega via WhatsApp (OneCode), e-mail, telefone ou ticket (GClick). Você tem até 15 minutos para dar a primeira resposta no horário comercial.", tip: "Mesmo sem a resposta pronta, avise que recebeu e está verificando. O cliente precisa saber que foi ouvido." },

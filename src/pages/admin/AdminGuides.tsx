@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { Plus, X, Check, Pencil, Trash2} from "lucide-react";
+import { Plus, X, Check, Pencil, Trash2 } from "lucide-react";
 
 interface GuideVideo {
   id: string;
@@ -21,24 +21,12 @@ interface GuideFaq {
   active: boolean;
 }
 
-interface GuideTab {
-  id: string;
-  guide_id: string;
-  key: string;
-  title: string;
-}
-
-interface Guide {
-  id: string;
-  title: string;
-  sector_key: string;
-}
-
 const STATIC_GUIDES = [
-  { key: "cs",     label: "CS / Atendimento",    tabs: ["fluxo", "ferramentas", "scripts", "checklist", "faq"] },
-  { key: "fiscal", label: "Fiscal",               tabs: ["rotina", "obrigacoes", "calendario", "checklist", "faq"] },
-  { key: "dp",     label: "Departamento Pessoal", tabs: ["rotina", "processos", "calendario", "checklist", "faq"] },
-  { key: "omie",   label: "OMIE",                 tabs: ["pagar", "receber", "conciliacao", "faq"] },
+  { key: "cs",         label: "CS / Atendimento",    tabs: ["fluxo", "ferramentas", "scripts", "checklist", "faq"] },
+  { key: "fiscal",     label: "Fiscal",               tabs: ["rotina", "obrigacoes", "calendario", "checklist", "faq"] },
+  { key: "dp",         label: "Departamento Pessoal", tabs: ["rotina", "processos", "calendario", "checklist", "faq"] },
+  { key: "omie",       label: "OMIE",                 tabs: ["pagar", "receber", "conciliacao", "faq"] },
+  { key: "contabil",   label: "Contábil",             tabs: ["rotina", "escrituracao", "demonstracoes", "sistemas", "checklist", "faq"] },
 ];
 
 const TAB_LABELS: Record<string, string> = {
@@ -46,6 +34,7 @@ const TAB_LABELS: Record<string, string> = {
   checklist: "Checklist", faq: "FAQ", rotina: "Rotina Diária",
   obrigacoes: "Obrigações", calendario: "Calendário", processos: "Processos",
   pagar: "Contas a Pagar", receber: "Contas a Receber", conciliacao: "Conciliação",
+  escrituracao: "Escrituração", demonstracoes: "Demonstrações", sistemas: "Sistemas",
 };
 
 export default function AdminGuides() {
@@ -57,12 +46,10 @@ export default function AdminGuides() {
   const [success, setSuccess]         = useState("");
   const [error, setError]             = useState("");
 
-  // Estados vídeo
   const [showVideoForm, setShowVideoForm] = useState(false);
   const [editVideoId, setEditVideoId]     = useState<string | null>(null);
   const [videoForm, setVideoForm]         = useState({ tab_key: "fluxo", title: "", description: "", video_url: "", duration: "" });
 
-  // Estados FAQ
   const [showFaqForm, setShowFaqForm] = useState(false);
   const [editFaqId, setEditFaqId]     = useState<string | null>(null);
   const [faqForm, setFaqForm]         = useState({ question: "", answer: "" });
@@ -70,16 +57,20 @@ export default function AdminGuides() {
   const guide = STATIC_GUIDES.find(g => g.key === activeGuide)!;
 
   async function loadVideos() {
+    const { data: tabs } = await supabase
+      .from("guide_tabs")
+      .select("id, key, guide_id, guides(sector_key)")
+      .filter("guides.sector_key", "eq", activeGuide);
+
+    const tabIds = (tabs ?? []).map((t: any) => t.id);
+    if (tabIds.length === 0) { setVideos([]); return; }
+
     const { data } = await supabase
       .from("guide_videos")
-      .select("*, guide_tabs(key, guide_id, guides(sector_key))")
+      .select("*")
+      .in("tab_id", tabIds)
       .order("order_num");
 
-    // Filtra pelo guia ativo
-    const filtered = (data ?? []).filter((v: any) =>
-      v.guide_tabs?.guides?.sector_key === activeGuide ||
-      v.guide_tabs?.key !== undefined
-    );
     setVideos(data ?? []);
   }
 
@@ -101,7 +92,6 @@ export default function AdminGuides() {
     backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)"
   };
 
-  // ─── VÍDEOS ───────────────────────────────────────────────────────────────
   async function handleSaveVideo() {
     if (!videoForm.title || !videoForm.video_url) { setError("Preencha título e URL do vídeo."); return; }
     setLoading(true); setError("");
@@ -113,29 +103,24 @@ export default function AdminGuides() {
       }).eq("id", editVideoId);
       setEditVideoId(null);
     } else {
-      // Busca ou cria tab
+      let { data: guideData } = await supabase
+        .from("guides").select("id").eq("sector_key", activeGuide).single();
+
+      if (!guideData) {
+        const { data: newGuide } = await supabase
+          .from("guides")
+          .insert({ sector_key: activeGuide, title: guide.label, company_id: null })
+          .select().single();
+        guideData = newGuide;
+      }
+
       let { data: tabData } = await supabase
-        .from("guide_tabs")
-        .select("id")
+        .from("guide_tabs").select("id")
         .eq("key", videoForm.tab_key)
+        .eq("guide_id", guideData!.id)
         .single();
 
       if (!tabData) {
-        // Busca guia
-        let { data: guideData } = await supabase
-          .from("guides")
-          .select("id")
-          .eq("sector_key", activeGuide)
-          .single();
-
-        if (!guideData) {
-          const { data: newGuide } = await supabase
-            .from("guides")
-            .insert({ sector_key: activeGuide, title: guide.label, company_id: null })
-            .select().single();
-          guideData = newGuide;
-        }
-
         const { data: newTab } = await supabase
           .from("guide_tabs")
           .insert({ guide_id: guideData!.id, key: videoForm.tab_key, title: TAB_LABELS[videoForm.tab_key] ?? videoForm.tab_key })
@@ -151,7 +136,7 @@ export default function AdminGuides() {
       });
     }
 
-    setVideoForm({ tab_key: "fluxo", title: "", description: "", video_url: "", duration: "" });
+    setVideoForm({ tab_key: guide.tabs[0], title: "", description: "", video_url: "", duration: "" });
     setShowVideoForm(false);
     setSuccess("Vídeo salvo!");
     setTimeout(() => setSuccess(""), 3000);
@@ -164,7 +149,6 @@ export default function AdminGuides() {
     loadVideos();
   }
 
-  // ─── FAQ ──────────────────────────────────────────────────────────────────
   async function handleSaveFaq() {
     if (!faqForm.question || !faqForm.answer) { setError("Preencha pergunta e resposta."); return; }
     setLoading(true); setError("");
@@ -196,17 +180,19 @@ export default function AdminGuides() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-
-      {/* Header */}
       <div>
         <h1 className="text-xl font-bold" style={{ color: "var(--soma-text)" }}>📖 Guias</h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--soma-muted)" }}>Gerencie vídeos e FAQ dos guias</p>
       </div>
 
-      {/* Seletor de guia */}
       <div className="flex gap-2 flex-wrap">
         {STATIC_GUIDES.map(g => (
-          <button key={g.key} onClick={() => { setActiveGuide(g.key); setShowVideoForm(false); setShowFaqForm(false); }}
+          <button key={g.key} onClick={() => {
+            setActiveGuide(g.key);
+            setShowVideoForm(false);
+            setShowFaqForm(false);
+            setVideoForm(f => ({ ...f, tab_key: g.tabs[0] }));
+          }}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             style={{
               backgroundColor: activeGuide === g.key ? "#f5a623" : "var(--soma-card)",
@@ -218,7 +204,6 @@ export default function AdminGuides() {
         ))}
       </div>
 
-      {/* Tabs Vídeos / FAQ */}
       <div className="flex gap-1 border-b" style={{ borderColor: "var(--soma-border)" }}>
         {(["videos", "faq"] as const).map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -232,16 +217,14 @@ export default function AdminGuides() {
         ))}
       </div>
 
-      {/* Feedback */}
       {success && <div className="rounded-xl px-4 py-3 text-sm font-medium" style={{ backgroundColor: "rgba(22,163,74,0.15)", border: "1px solid rgba(22,163,74,0.3)", color: "#4ade80" }}>✅ {success}</div>}
       {error   && <div className="rounded-xl px-4 py-3 text-sm" style={{ backgroundColor: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)", color: "#f87171" }}>⚠️ {error}</div>}
 
-      {/* ─── VÍDEOS ─── */}
       {activeTab === "videos" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm" style={{ color: "var(--soma-muted)" }}>{videos.length} vídeos cadastrados</p>
-            <button onClick={() => { setShowVideoForm(true); setEditVideoId(null); setVideoForm({ tab_key: "fluxo", title: "", description: "", video_url: "", duration: "" }); }}
+            <button onClick={() => { setShowVideoForm(true); setEditVideoId(null); setVideoForm({ tab_key: guide.tabs[0], title: "", description: "", video_url: "", duration: "" }); }}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
               style={{ backgroundColor: "#f5a623", color: "#000" }}>
               <Plus size={16} /> Novo vídeo
@@ -309,7 +292,6 @@ export default function AdminGuides() {
             </div>
           )}
 
-          {/* Lista de vídeos */}
           <div className="space-y-3">
             {videos.length === 0 && (
               <div className="text-center py-10 text-sm" style={{ color: "var(--soma-muted)" }}>
@@ -319,7 +301,6 @@ export default function AdminGuides() {
             {videos.map(v => (
               <div key={v.id} className="rounded-xl border p-4 flex items-start gap-4"
                 style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
-                {/* Thumbnail */}
                 <div className="w-24 h-16 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
                   style={{ backgroundColor: "var(--soma-bg)" }}>
                   {v.video_url && (
@@ -341,7 +322,7 @@ export default function AdminGuides() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => {
                     setEditVideoId(v.id);
-                    setVideoForm({ tab_key: "fluxo", title: v.title, description: v.description ?? "", video_url: v.video_url ?? "", duration: v.duration ?? "" });
+                    setVideoForm({ tab_key: guide.tabs[0], title: v.title, description: v.description ?? "", video_url: v.video_url ?? "", duration: v.duration ?? "" });
                     setShowVideoForm(true);
                   }} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
                     style={{ backgroundColor: "rgba(245,166,35,0.1)", border: "1px solid rgba(245,166,35,0.2)", color: "#f5a623" }}>
@@ -359,7 +340,6 @@ export default function AdminGuides() {
         </div>
       )}
 
-      {/* ─── FAQ ─── */}
       {activeTab === "faq" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">

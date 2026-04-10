@@ -77,7 +77,7 @@ export default function Sidebar({ theme }: SidebarProps) {
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden"
             style={{ backgroundColor: "rgba(245,166,35,0.15)", color: "#f5a623" }}>
             <img
-              src={profile?.avatar_url}
+              src={profile?.avatar_url ?? ""}
               alt=""
               className="w-full h-full object-cover"
               onError={e => {

@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen, Settings } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { Theme } from "../../styles/themes";
@@ -16,6 +16,7 @@ const guideLinks = [
 export default function Sidebar({ theme }: SidebarProps) {
   const { profile, signOut } = useAuth();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
@@ -67,16 +68,30 @@ export default function Sidebar({ theme }: SidebarProps) {
 
       {/* Usuário */}
       <div className="px-4 py-4 border-t" style={{ borderColor: "var(--soma-border)" }}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+        <button
+          onClick={() => navigate("/perfil")}
+          className="flex items-center gap-3 mb-3 w-full text-left rounded-lg p-1 transition-colors"
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(245,166,35,0.08)")}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+        >
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden"
             style={{ backgroundColor: "rgba(245,166,35,0.15)", color: "#f5a623" }}>
-            {profile?.full_name?.[0]?.toUpperCase() ?? "U"}
+            <img
+              src={profile?.avatar_url}
+              alt=""
+              className="w-full h-full object-cover"
+              onError={e => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = "none";
+                img.parentElement!.innerText = profile?.full_name?.[0]?.toUpperCase() ?? "U";
+              }}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate" style={{ color: "var(--soma-text)" }}>{profile?.full_name ?? "Usuário"}</p>
             <p className="text-xs truncate capitalize" style={{ color: "var(--soma-muted)" }}>{profile?.sector ?? profile?.role}</p>
           </div>
-        </div>
+        </button>
         <button onClick={signOut} className="w-full text-sm text-center transition-colors hover:text-red-400"
           style={{ color: "var(--soma-muted)" }}>
           Sair

@@ -8,6 +8,7 @@ interface Profile {
   company: "soma_prime" | "ph_consult";
   role: "collaborator" | "manager" | "admin";
   sector: "cs" | "fiscal" | "dp" | null;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {
@@ -31,21 +32,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("*")
       .eq("id", userId)
       .single();
+
+    if (data) {
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(`${userId}.jpg`);
+      data.avatar_url = urlData.publicUrl;
+    }
+
     setProfile(data);
   }
 
   useEffect(() => {
+    // Busca sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        fetchProfile(u.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     });
 
+    // Ouve mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) fetchProfile(session.user.id);
-        else setProfile(null);
+        const u = session?.user ?? null;
+        setUser(u);
+        if (u) {
+          fetchProfile(u.id);
+        } else {
+          setProfile(null);
+        }
       }
     );
 

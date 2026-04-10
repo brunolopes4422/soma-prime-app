@@ -5,6 +5,7 @@ import GuideCard from "../../components/ui/GuideCard";
 import VideoCard from "../../components/ui/VideoCard";
 import Quiz from "../../components/ui/Quiz";
 import { useChecklist } from "../../hooks/useChecklist";
+import { useGuideVideos } from "../../hooks/useGuideVideos";
 
 function Steps({ items }: { items: { title: string; desc: string; tip?: string }[] }) {
   const [active, setActive] = useState<number | null>(null);
@@ -56,15 +57,26 @@ function CertoErrado({ items }: { items: { certo: string; errado: string }[] }) 
 }
 
 function TabFluxo() {
+  const { videos } = useGuideVideos("cs", "fluxo");
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="font-bold text-sm mb-3" style={{ color: "var(--soma-text)" }}>🎬 Aulas em vídeo</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <VideoCard videoId="cs-fluxo-atendimento" title="Fluxo de Atendimento na Prática" description="Aprenda o passo a passo completo do atendimento." duration="12 min" instructor="CS Sênior" videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
-          <VideoCard videoId="cs-gclick-tutorial" title="Como usar o GClick corretamente" description="Tutorial completo de abertura e gestão de tickets." duration="8 min" instructor="CS Sênior" comingSoon />
+      {videos.length > 0 && (
+        <div>
+          <h3 className="font-bold text-sm mb-3" style={{ color: "var(--soma-text)" }}>🎬 Aulas em vídeo</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {videos.map(v => (
+              <VideoCard
+                key={v.id}
+                videoId={v.id}
+                title={v.title}
+                description={v.description ?? undefined}
+                duration={v.duration ?? undefined}
+                videoUrl={v.video_url ?? undefined}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div className="rounded-xl p-4 text-sm leading-relaxed" style={{ backgroundColor: "rgba(245,166,35,0.06)", border: "1px solid rgba(245,166,35,0.2)", color: "var(--soma-muted)" }}>
         📋 O fluxo de atendimento é o coração do CS. <strong style={{ color: "var(--soma-text)" }}>Nunca pule etapas.</strong>
       </div>

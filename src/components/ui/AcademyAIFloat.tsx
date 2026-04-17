@@ -59,24 +59,6 @@ export default function AcademyAIFloat() {
     setLoading(true);
 
     try {
-      const history = newMessages
-        .slice(-6)
-        .map(m => `${m.role === "user" ? "Colaborador" : "Tutora"}: ${m.content}`)
-        .join("\n");
-
-      const prompt = `Você é a IA Tutora da Soma Prime Academy, especialista em Customer Success para escritórios de contabilidade brasileiros.
-Colaborador: ${profile?.full_name ?? "Colaborador"}
-Contexto atual: ${pageContext}
-
-Histórico:
-${history}
-
-Pergunta: ${msg}
-
-Responda em português brasileiro, seja direto e prático, máximo 3 parágrafos curtos.
-Use emojis com moderação.
-SEMPRE termine com: "⚠️ Confirme com seu gestor antes de aplicar!"`;
-
       const res = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
         {

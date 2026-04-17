@@ -28,8 +28,8 @@ const SUGGESTIONS: Record<string, string[]> = {
   default:          ["Como emito um DAS?", "O que é SLA?", "Como abrir um ticket no GClick?"],
 };
 
-// Chave do Gemini — coloca no .env como VITE_GEMINI_API_KEY
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? "";
+// Chave do Groq — coloca no .env como VITE_GROQ_API_KEY
+const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY ?? "";
 
 export default function AcademyAIFloat() {
   const { profile } = useAuth();
@@ -78,19 +78,27 @@ Use emojis com moderação.
 SEMPRE termine com: "⚠️ Confirme com seu gestor antes de aplicar!"`;
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+        "https://api.groq.com/openai/v1/chat/completions",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_KEY}`,
+          },
           body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 500 },
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: `Você é a IA Tutora da Soma Prime Academy, especialista em Customer Success para escritórios de contabilidade brasileiros. Contexto atual: ${pageContext}. Responda em português brasileiro, seja direto e prático, máximo 3 parágrafos. Use emojis com moderação. SEMPRE termine com: "⚠️ Confirme com seu gestor antes de aplicar!"` },
+              ...newMessages.map((m: any) => ({ role: m.role, content: m.content }))
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
           }),
         }
       );
 
       const data = await res.json();
-      let reply = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      let reply = data.choices?.[0]?.message?.content ?? "";
       if (!reply) reply = "Não consegui responder agora. Tente novamente!";
       if (!reply.includes("gestor")) reply += "\n\n⚠️ Confirme com seu gestor antes de aplicar!";
 

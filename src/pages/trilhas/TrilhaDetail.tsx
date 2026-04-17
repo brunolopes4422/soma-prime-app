@@ -77,11 +77,29 @@ function AcademyAI({ lessonTitle, lessonContent, trilhaTitle }: { lessonTitle: s
     setMessages(newMessages);
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("academy-ai", {
-        body: { messages: newMessages, lessonTitle, lessonContent, trilhaTitle },
+      const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY ?? "";
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content: `Você é a IA Tutora da Soma Prime Academy, especialista em Customer Success para escritórios de contabilidade brasileiros. Você está ajudando na aula "${lessonTitle}" da trilha "${trilhaTitle}". Conteúdo da aula: ${lessonContent?.slice(0, 1000) ?? ""}. Responda em português brasileiro, seja direto e prático, máximo 3 parágrafos. Use emojis com moderação. SEMPRE termine com: "⚠️ Confirme com seu gestor antes de aplicar!"`
+            },
+            ...newMessages.map(m => ({ role: m.role, content: m.content }))
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
       });
-      if (error) throw error;
-      setMessages(m => [...m, { role: "assistant", content: data.reply }]);
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content ?? "Não consegui responder agora. Tente novamente!";
+      setMessages(m => [...m, { role: "assistant", content: reply }]);
     } catch {
       setMessages(m => [...m, { role: "assistant", content: "Ops! Não consegui responder agora. Tente novamente em instantes." }]);
     }

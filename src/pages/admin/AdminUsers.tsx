@@ -80,11 +80,18 @@ export default function AdminUsers() {
       if (!form.password.trim()) { setError("Preencha a senha."); setLoading(false); return; }
       if (form.password.length < 6) { setError("A senha precisa ter pelo menos 6 caracteres."); setLoading(false); return; }
 
-      // Cria o usuário no Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Cria o usuário via signUp
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
-        email_confirm: true,
+        options: {
+          data: {
+            full_name: form.full_name.trim(),
+            company:   form.company,
+            role:      form.role,
+            sector:    form.sector || null,
+          }
+        }
       });
 
       if (authError || !authData.user) {
@@ -92,14 +99,14 @@ export default function AdminUsers() {
         setLoading(false); return;
       }
 
-      // Cria o perfil
+      // Cria/atualiza o perfil manualmente
       await supabase.from("profiles").upsert({
         id:        authData.user.id,
         full_name: form.full_name.trim(),
         company:   form.company,
         role:      form.role,
         sector:    form.sector || null,
-      });
+      }, { onConflict: "id" });
 
       setSuccess(`Usuário ${form.full_name} criado com sucesso!`);
 

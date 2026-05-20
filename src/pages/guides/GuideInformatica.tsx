@@ -79,15 +79,15 @@ const checklistItems = [
 ];
 
 function Checklist() {
-  const { items, toggle } = useChecklist(GUIDE_KEY, checklistItems);
-  const done = items.filter(i => i.checked).length;
-  const pct  = Math.round((done / items.length) * 100);
+  const { checked, toggle } = useChecklist(GUIDE_KEY);
+  const done = checklistItems.filter((_, i) => checked[`item_${i}`]).length;
+  const pct  = Math.round((done / checklistItems.length) * 100);
 
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs" style={{ color: "var(--soma-muted)" }}>
-          <span>{done} de {items.length} itens</span>
+          <span>{done} de {checklistItems.length} itens</span>
           <span style={{ color: "#f5a623", fontWeight: 600 }}>{pct}%</span>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--soma-bg)" }}>
@@ -95,15 +95,19 @@ function Checklist() {
         </div>
       </div>
       <div className="space-y-2">
-        {items.map(item => (
-          <label key={item.id} className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all"
-            style={{ backgroundColor: item.checked ? "rgba(22,163,74,0.08)" : "var(--soma-card)", border: `1px solid ${item.checked ? "rgba(22,163,74,0.2)" : "var(--soma-border)"}` }}>
-            <input type="checkbox" checked={item.checked} onChange={() => toggle(item.id)} className="mt-0.5 accent-green-500 shrink-0" />
-            <span className="text-sm" style={{ color: item.checked ? "var(--soma-muted)" : "var(--soma-text)", textDecoration: item.checked ? "line-through" : "none" }}>
-              {item.label}
-            </span>
-          </label>
-        ))}
+        {checklistItems.map((label, i) => {
+          const id = `item_${i}`;
+          const isChecked = !!checked[id];
+          return (
+            <label key={id} className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all"
+              style={{ backgroundColor: isChecked ? "rgba(22,163,74,0.08)" : "var(--soma-card)", border: `1px solid ${isChecked ? "rgba(22,163,74,0.2)" : "var(--soma-border)"}` }}>
+              <input type="checkbox" checked={isChecked} onChange={() => toggle(id)} className="mt-0.5 accent-green-500 shrink-0" />
+              <span className="text-sm" style={{ color: isChecked ? "var(--soma-muted)" : "var(--soma-text)", textDecoration: isChecked ? "line-through" : "none" }}>
+                {label}
+              </span>
+            </label>
+          );
+        })}
       </div>
     </div>
   );

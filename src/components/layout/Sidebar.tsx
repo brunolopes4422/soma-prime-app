@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen, Settings, BookMarked } from "lucide-react";
+import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen, Settings, BookMarked, Monitor } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { Theme } from "../../styles/themes";
@@ -12,6 +12,7 @@ const guideLinks = [
   { to: "/guias/dp",       label: "Dep. Pessoal",      icon: Briefcase,  module: "dp" },
   { to: "/guias/contabil", label: "Contábil",          icon: BookMarked, module: "contabil" },
   { to: "/guias/omie",     label: "OMIE",              icon: Calculator, module: "omie" },
+  { to: "/guias/informatica", label: "Informática",       icon: Monitor,    module: "informatica" },
 ];
 
 export default function Sidebar({ theme }: SidebarProps) {

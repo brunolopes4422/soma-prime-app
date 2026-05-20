@@ -24,7 +24,7 @@ export const themes: Record<CompanyKey, Theme> = {
     sidebar: "bg-soma-card border-soma-border",
     accent:  "text-gold-light",
     badge:   "bg-gold-light/10 text-gold-light border border-gold-light/30",
-    modules: ["cs", "fiscal", "dp", "omie", "onboarding"],
+    modules: ["cs", "fiscal", "dp", "omie", "contabil", "informatica", "onboarding"],
   },
   ph_consult: {
     name: "PH Consult Pro",
@@ -36,7 +36,7 @@ export const themes: Record<CompanyKey, Theme> = {
     sidebar: "bg-soma-card border-soma-border",
     accent:  "text-gold-light",
     badge:   "bg-gold-light/10 text-gold-light border border-gold-light/30",
-    modules: ["cs", "fiscal", "dp", "omie", "onboarding"],
+    modules: ["cs", "fiscal", "dp", "omie", "contabil", "informatica", "onboarding"],
   },
 };
 

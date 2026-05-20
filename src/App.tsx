@@ -19,6 +19,7 @@ import SetPassword from "./pages/SetPassword";
 import Profile from "./pages/Profile";
 import AdminGuides from "./pages/admin/AdminGuides";
 import GuideContabil from "./pages/guides/GuideContabil";
+import GuideInformatica from "./pages/guides/GuideInformatica";
 
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -72,6 +73,7 @@ export default function App() {
             <Route path="guias/dp"      element={<GuideDP />} />
             <Route path="guias/contabil" element={<GuideContabil />} />
             <Route path="guias/omie"    element={<GuideOMIE />} />
+            <Route path="guias/informatica" element={<GuideInformatica />} />
             <Route path="guias/*"       element={<ComingSoon />} />
             <Route path="trilhas"       element={<Trilhas />} />
             <Route path="trilhas/:id"   element={<TrilhaDetail />} />

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import ConteudoComIlustracoes from "../../components/ui/IlustracoesTrilha";
 import { useTrilha } from "../../hooks/useTrilha";
 import {
   ChevronLeft, ChevronDown, CheckCircle2, Play, Trophy,

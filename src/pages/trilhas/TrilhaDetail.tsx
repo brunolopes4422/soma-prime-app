@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTrilha } from "../../hooks/useTrilha";
+import Certificado from "../../components/ui/Certificado";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Play, Trophy,
   Clock, MessageCircle, Send, Bot, X, Flame, Menu,
   BookOpen, PenLine, SkipBack, SkipForward,
-  AlertTriangle
+  AlertTriangle, HelpCircle
 } from "lucide-react";
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
@@ -378,6 +379,295 @@ function LessonContent({ content }: { content: string }) {
   );
 }
 
+
+// ─── QUIZ INTERATIVO ──────────────────────────────────────────────────────────
+function QuizBlock({ lesson, trilhaId, userId }: { lesson: any; trilhaId: string; userId: string }) {
+  const rawQuiz = lesson?.quiz_data;
+  const questions: any[] = rawQuiz
+    ? Array.isArray(rawQuiz) ? rawQuiz : [rawQuiz]
+    : [];
+
+  const isFinal = lesson?.title?.toLowerCase().includes("avaliação final");
+  const MAX_TENTATIVAS = isFinal ? 3 : Infinity;
+
+  const [currentQ, setCurrentQ]       = useState(0);
+  const [answers, setAnswers]         = useState<Record<number, string>>({});
+  const [submitted, setSubmitted]     = useState(false);
+  const [saving, setSaving]           = useState(false);
+  const [score, setScore]             = useState(0);
+  const [tentativas, setTentativas]   = useState(0);
+  const [bloqueado, setBloqueado]     = useState(false);
+
+  // RESET ao mudar de aula
+  useEffect(() => {
+    setCurrentQ(0); setAnswers({}); setSubmitted(false);
+    setScore(0); setTentativas(0); setBloqueado(false);
+  }, [lesson?.id]);
+
+  // Carrega tentativas anteriores
+  useEffect(() => {
+    if (!userId || !lesson?.id) return;
+    supabase.from("trilha_quiz_results")
+      .select("answer, correct, tentativa, created_at")
+      .eq("user_id", userId)
+      .eq("lesson_id", lesson.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+
+        // Normaliza tentativa — registros antigos podem ter null
+        const normalized = data.map((r: any, i: number) => ({
+          ...r,
+          tentativa: r.tentativa ?? 1,
+        }));
+
+        // Maior número de tentativa registrado
+        const maxTentativa = Math.max(...normalized.map((r: any) => r.tentativa));
+        setTentativas(maxTentativa);
+
+        // Pega todos os registros da última tentativa
+        const ultima = normalized.filter((r: any) => r.tentativa === maxTentativa);
+
+        // Reconstrói respostas por índice de pergunta
+        // Os registros são inseridos em ordem, então index = posição
+        const savedAnswers: Record<number, string> = {};
+        ultima.forEach((r: any, i: number) => {
+          if (r.answer) savedAnswers[i] = r.answer;
+        });
+
+        const corretas = ultima.filter((r: any) => r.correct).length;
+        setAnswers(savedAnswers);
+        setSubmitted(true);
+        setScore(corretas);
+        if (isFinal && maxTentativa >= MAX_TENTATIVAS) setBloqueado(true);
+      });
+  }, [userId, lesson?.id]);
+
+  if (questions.length === 0) return null;
+
+  const q = questions[currentQ];
+  const selectedAnswer = answers[currentQ];
+  const isLast = currentQ === questions.length - 1;
+  const pct = submitted ? Math.round((score / questions.length) * 100) : 0;
+
+  async function handleSubmitAll() {
+    if (saving) return;
+    setSaving(true);
+    let correctCount = 0;
+    const novaTentativa = tentativas + 1;
+
+    // Monta todos os registros de uma vez
+    const registros = questions.map((qItem, i) => {
+      const ans = answers[i];
+      const isCorrect = ans === qItem.options?.find((o: any) => o.correct)?.id;
+      if (isCorrect) correctCount++;
+      return {
+        user_id: userId,
+        lesson_id: lesson.id,
+        trilha_id: trilhaId,
+        correct: isCorrect,
+        answer: ans ?? "",
+        tentativa: novaTentativa,
+      };
+    });
+
+    // Insere todos de uma vez
+    const { error } = await supabase
+      .from("trilha_quiz_results")
+      .insert(registros);
+
+    if (error) {
+      console.error("Erro ao salvar quiz:", error);
+      // Tenta inserir um por um como fallback
+      for (const reg of registros) {
+        const { error: e2 } = await supabase.from("trilha_quiz_results").insert(reg);
+        if (e2) console.error("Erro inserção individual:", e2);
+      }
+    }
+
+    setScore(correctCount);
+    setTentativas(novaTentativa);
+    setSubmitted(true);
+    if (isFinal && novaTentativa >= MAX_TENTATIVAS) setBloqueado(true);
+    setSaving(false);
+  }
+
+  function handleRetry() {
+    setCurrentQ(0); setAnswers({}); setSubmitted(false); setScore(0);
+  }
+
+  const tentativasRestantes = isFinal ? MAX_TENTATIVAS - tentativas : null;
+
+  return (
+    <div className="rounded-2xl border p-5 space-y-4"
+      style={{
+        backgroundColor: submitted ? pct >= 70 ? "rgba(34,197,94,0.04)" : "rgba(248,113,113,0.04)" : "var(--soma-card)",
+        borderColor: bloqueado ? "rgba(248,113,113,0.4)" : submitted ? pct >= 70 ? "rgba(34,197,94,0.3)" : "rgba(248,113,113,0.3)" : "rgba(168,85,247,0.25)"
+      }}>
+
+      {/* Header */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: isFinal ? "rgba(245,166,35,0.15)" : "rgba(168,85,247,0.15)" }}>
+          <HelpCircle size={13} style={{ color: isFinal ? "#f5a623" : "#a855f7" }} />
+        </div>
+        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: isFinal ? "#f5a623" : "#a855f7" }}>
+          {isFinal ? "⚠️ Avaliação Final" : `Quiz da aula · ${currentQ + 1}/${questions.length}`}
+        </p>
+        {submitted && (
+          <span className="ml-auto text-xs font-semibold px-2.5 py-1 rounded-full"
+            style={{ backgroundColor: pct >= 70 ? "rgba(34,197,94,0.12)" : "rgba(248,113,113,0.12)", color: pct >= 70 ? "#22c55e" : "#f87171" }}>
+            {score}/{questions.length} ({pct}%)
+          </span>
+        )}
+      </div>
+
+      {/* Aviso de tentativas — avaliação final */}
+      {isFinal && (
+        <div className="rounded-xl p-3 text-xs space-y-1"
+          style={{ backgroundColor: bloqueado ? "rgba(248,113,113,0.08)" : "rgba(245,166,35,0.08)", border: `1px solid ${bloqueado ? "rgba(248,113,113,0.25)" : "rgba(245,166,35,0.25)"}` }}>
+          {bloqueado ? (
+            <>
+              <p className="font-bold" style={{ color: "#f87171" }}>🔒 Tentativas esgotadas ({MAX_TENTATIVAS}/{MAX_TENTATIVAS})</p>
+              <p style={{ color: "var(--soma-muted)" }}>Você utilizou todas as tentativas disponíveis. Para refazer a avaliação, solicite o reset ao administrador.</p>
+            </>
+          ) : (
+            <>
+              <p className="font-bold" style={{ color: "#f5a623" }}>
+                ⚠️ Atenção: esta é a Avaliação Final — nota mínima 70% para certificado
+              </p>
+              <p style={{ color: "var(--soma-muted)" }}>
+                Tentativas disponíveis: {tentativasRestantes} de {MAX_TENTATIVAS}.
+                {tentativasRestantes === 1 && " Esta é sua ÚLTIMA tentativa!"}
+                {" "}Se esgotar todas, precisará reiniciar a trilha.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Barra de progresso */}
+      {questions.length > 1 && !submitted && (
+        <div className="flex gap-1">
+          {questions.map((_, i) => (
+            <div key={i} className="h-1 flex-1 rounded-full transition-all"
+              style={{ backgroundColor: i <= currentQ ? (isFinal ? "#f5a623" : "#a855f7") : "var(--soma-bg)", opacity: i === currentQ ? 1 : i < currentQ ? 0.6 : 0.3 }} />
+          ))}
+        </div>
+      )}
+
+      {/* RESULTADO FINAL */}
+      {submitted ? (
+        <div className="space-y-3">
+          <div className="text-center p-4 rounded-xl"
+            style={{ backgroundColor: pct >= 70 ? "rgba(34,197,94,0.06)" : "rgba(248,113,113,0.06)" }}>
+            <p className="text-3xl font-bold" style={{ color: pct >= 70 ? "#22c55e" : "#f87171" }}>
+              {score}/{questions.length}
+            </p>
+            <p className="text-sm mt-1 font-semibold" style={{ color: pct >= 70 ? "#16a34a" : "#dc2626" }}>
+              {pct >= 80 ? "🎉 Excelente!" : pct >= 70 ? "✅ Aprovado!" : "❌ Abaixo do mínimo (70%)"}
+            </p>
+            <p className="text-xs mt-1" style={{ color: "var(--soma-muted)" }}>{pct}%</p>
+          </div>
+
+          {/* Revisão */}
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {questions.map((qItem, i) => {
+              const myAns = answers[i];
+              const correctOpt = qItem.options?.find((o: any) => o.correct);
+              const isOk = myAns === correctOpt?.id;
+              const myOpt = qItem.options?.find((o: any) => o.id === myAns);
+              return (
+                <div key={i} className="p-3 rounded-xl text-xs space-y-1"
+                  style={{ backgroundColor: isOk ? "rgba(34,197,94,0.06)" : "rgba(248,113,113,0.06)", border: `1px solid ${isOk ? "rgba(34,197,94,0.2)" : "rgba(248,113,113,0.2)"}` }}>
+                  <p className="font-semibold" style={{ color: "var(--soma-text)" }}>{i+1}. {qItem.question}</p>
+                  {!isOk && <p style={{ color: "#f87171" }}>Sua resposta: {myOpt?.text ?? "Não respondida"}</p>}
+                  <p style={{ color: "#22c55e" }}>✅ Correta: {correctOpt?.text}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Botão tentar novamente */}
+          {!bloqueado && (
+            <button onClick={handleRetry}
+              className="w-full py-2.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+              style={{ border: `1px solid ${isFinal ? "rgba(245,166,35,0.3)" : "rgba(168,85,247,0.3)"}`, color: isFinal ? "#f5a623" : "#a855f7" }}>
+              {isFinal
+                ? `🔄 Tentar novamente (${tentativasRestantes} tentativa${tentativasRestantes !== 1 ? "s" : ""} restante${tentativasRestantes !== 1 ? "s" : ""})`
+                : "🔄 Tentar novamente"}
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* BLOQUEADO */}
+          {bloqueado ? (
+            <div className="text-center py-6">
+              <p className="text-2xl mb-2">🔒</p>
+              <p className="text-sm font-semibold" style={{ color: "#f87171" }}>Avaliação bloqueada</p>
+              <p className="text-xs mt-1" style={{ color: "var(--soma-muted)" }}>Solicite o reset ao administrador para tentar novamente.</p>
+            </div>
+          ) : (
+            <>
+              {/* Pergunta */}
+              <p className="text-sm font-medium leading-relaxed" style={{ color: "var(--soma-text)" }}>
+                {q?.question}
+              </p>
+
+              {/* Alternativas */}
+              <div className="space-y-2">
+                {q?.options?.map((opt: any) => {
+                  const isSelected = selectedAnswer === opt.id;
+                  return (
+                    <button key={opt.id}
+                      onClick={() => setAnswers(prev => ({ ...prev, [currentQ]: opt.id }))}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
+                      style={{ backgroundColor: isSelected ? `rgba(${isFinal ? "245,166,35" : "168,85,247"},0.08)` : "var(--soma-bg)", border: `1px solid ${isSelected ? `rgba(${isFinal ? "245,166,35" : "168,85,247"},0.4)` : "var(--soma-border)"}` }}>
+                      <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
+                        style={{ borderColor: isSelected ? (isFinal ? "#f5a623" : "#a855f7") : "var(--soma-border)", backgroundColor: isSelected ? (isFinal ? "#f5a623" : "#a855f7") : "transparent" }}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <span className="text-sm" style={{ color: "var(--soma-text)" }}>{opt.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Navegação */}
+              <div className="flex items-center gap-3">
+                {currentQ > 0 && (
+                  <button onClick={() => setCurrentQ(v => v - 1)}
+                    className="px-4 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80"
+                    style={{ border: "1px solid var(--soma-border)", color: "var(--soma-muted)" }}>
+                    ← Anterior
+                  </button>
+                )}
+                <div className="flex-1" />
+                {!isLast ? (
+                  <button onClick={() => setCurrentQ(v => v + 1)} disabled={!selectedAnswer}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold disabled:opacity-40 transition-all hover:opacity-90"
+                    style={{ backgroundColor: isFinal ? "#f5a623" : "#a855f7", color: isFinal ? "#000" : "#fff" }}>
+                    Próxima →
+                  </button>
+                ) : (
+                  <button onClick={handleSubmitAll}
+                    disabled={Object.keys(answers).length < questions.length || saving}
+                    className="px-5 py-2 rounded-xl text-xs font-semibold disabled:opacity-40 transition-all hover:opacity-90"
+                    style={{ backgroundColor: isFinal ? "#f5a623" : "#a855f7", color: isFinal ? "#000" : "#fff" }}>
+                    {saving ? "Salvando..." : `Finalizar (${Object.keys(answers).length}/${questions.length})`}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 export default function TrilhaDetail() {
   const { id } = useParams<{ id: string }>();
@@ -391,7 +681,32 @@ export default function TrilhaDetail() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [certDone, setCertDone] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
+  const [showCertModal, setShowCertModal] = useState(false);
+  const [finalScore, setFinalScore] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"conteudo" | "notas" | "comentarios">("conteudo");
+
+  // Carrega nota da avaliação final ao inicializar
+  useEffect(() => {
+    if (!profile || !id || !modules.length) return;
+    const allLessons = modules.flatMap(m => m.lessons as any[]);
+    const avFinal = allLessons.find((l: any) => l.title?.toLowerCase().includes("avaliação final"));
+    if (!avFinal) return;
+    supabase.from("trilha_quiz_results")
+      .select("correct, tentativa, created_at")
+      .eq("user_id", profile.id)
+      .eq("lesson_id", avFinal.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        const maxT = Math.max(...data.map((r: any) => r.tentativa ?? 1));
+        const ultima = data.filter((r: any) => (r.tentativa ?? 1) === maxT);
+        const totalQ = avFinal.quiz_data
+          ? (Array.isArray(avFinal.quiz_data) ? avFinal.quiz_data.length : 1)
+          : ultima.length;
+        const corretas = ultima.filter((r: any) => r.correct).length;
+        setFinalScore(Math.round((corretas / totalQ) * 100));
+      });
+  }, [profile, id, modules]);
 
   const streak = useStreak(user?.id ?? "");
 
@@ -429,10 +744,62 @@ export default function TrilhaDetail() {
   }
 
   async function handleCertificate() {
-    if (!profile || !id || hasCert || pct < 100) return;
+    if (!profile || !id || pct < 100) return;
     setCertLoading(true);
-    await supabase.from("certificates").insert({ user_id: profile.id, trilha_id: id, issued_at: new Date().toISOString() });
-    setCertDone(true);
+
+    // Busca avaliação final
+    const allLessons = modules.flatMap(m => m.lessons as any[]);
+    const avaliacaoFinal = allLessons.find((l: any) =>
+      l.title?.toLowerCase().includes("avaliação final")
+    );
+    let score: number | null = null;
+
+    if (avaliacaoFinal) {
+      const { data: quizResults } = await supabase
+        .from("trilha_quiz_results")
+        .select("correct, tentativa, created_at")
+        .eq("user_id", profile.id)
+        .eq("lesson_id", avaliacaoFinal.id)
+        .order("created_at", { ascending: false });
+
+      if (quizResults && quizResults.length > 0) {
+        // Pega a última tentativa (maior número)
+        const maxTentativa = Math.max(...quizResults.map((r: any) => r.tentativa ?? 1));
+        const ultima = quizResults.filter((r: any) => (r.tentativa ?? 1) === maxTentativa);
+        const totalPerguntas = avaliacaoFinal.quiz_data
+          ? (Array.isArray(avaliacaoFinal.quiz_data) ? avaliacaoFinal.quiz_data.length : 1)
+          : ultima.length;
+        const corretas = ultima.filter((r: any) => r.correct).length;
+        score = Math.round((corretas / totalPerguntas) * 100);
+        setFinalScore(score);
+      }
+    }
+
+    // Sem avaliação final ou sem resposta ainda
+    if (avaliacaoFinal && score === null) {
+      setCertLoading(false);
+      alert("Você precisa completar a Avaliação Final antes de emitir o certificado!");
+      return;
+    }
+
+    // Nota abaixo do mínimo
+    if (score !== null && score < 70) {
+      setCertLoading(false);
+      alert(`Nota insuficiente: ${score}% (mínimo 70%). Revise o conteúdo e refaça a Avaliação Final!`);
+      return;
+    }
+
+    // Emite certificado se ainda não tem
+    if (!hasCert && !certDone) {
+      await supabase.from("certificates").insert({
+        user_id: profile.id,
+        trilha_id: id,
+        issued_at: new Date().toISOString(),
+      });
+      setCertDone(true);
+    }
+
+    setShowCertModal(true);
     setCertLoading(false);
   }
 
@@ -541,17 +908,19 @@ export default function TrilhaDetail() {
         </div>
 
         {/* Certificado */}
-        {pct === 100 && (
+        {(pct === 100 || hasCert || certDone) && (
           <div className="p-4 shrink-0" style={{ borderTop: "1px solid var(--soma-border)" }}>
             {hasCert || certDone ? (
-              <div className="flex items-center gap-2 text-xs p-3 rounded-xl" style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "#4ade80" }}>
-                <Trophy size={14} /> Certificado emitido! 🎉
-              </div>
+              <button onClick={() => setShowCertModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                style={{ backgroundColor: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80" }}>
+                <Trophy size={14} /> Ver Certificado 🎉
+              </button>
             ) : (
               <button onClick={handleCertificate} disabled={certLoading}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all hover:opacity-90 disabled:opacity-50"
                 style={{ backgroundColor: "#f5a623", color: "#000" }}>
-                <Trophy size={14} /> {certLoading ? "Gerando..." : "Emitir Certificado"}
+                <Trophy size={14} /> {certLoading ? "Verificando..." : "Emitir Certificado"}
               </button>
             )}
           </div>
@@ -660,8 +1029,13 @@ export default function TrilhaDetail() {
 
             {/* Conteúdo da aba */}
             <div>
-              {activeTab === "conteudo" && activeLesson?.content && (
-                <LessonContent content={activeLesson.content} />
+              {activeTab === "conteudo" && (
+                <div className="space-y-6">
+                  {activeLesson?.content && <LessonContent content={activeLesson.content} />}
+                  {activeLesson?.quiz_data && user && (
+                    <QuizBlock lesson={activeLesson} trilhaId={id ?? ""} userId={user.id} />
+                  )}
+                </div>
               )}
               {activeTab === "notas" && activeLessonId && (
                 <Notes lessonId={activeLessonId} />
@@ -701,6 +1075,20 @@ export default function TrilhaDetail() {
           </div>
         </div>
       </main>
+
+      {/* ── MODAL CERTIFICADO ─────────────────────────────────────────────── */}
+      {showCertModal && trilha && profile && (
+        <Certificado
+          colaborador={profile.full_name ?? "Colaborador"}
+          trilha={trilha.title}
+          sector={trilha.sector}
+          nivel={levelLabel[trilha.level] ?? ""}
+          empresa={profile.company ?? "Soma Prime"}
+          dataEmissao={new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+          nota={finalScore ?? undefined}
+          onClose={() => setShowCertModal(false)}
+        />
+      )}
 
       {/* ── IA MODAL ───────────────────────────────────────────────────── */}
       {showAI && activeLesson && (

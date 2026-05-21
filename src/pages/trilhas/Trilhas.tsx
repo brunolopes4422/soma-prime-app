@@ -52,10 +52,25 @@ export default function Trilhas() {
   useEffect(() => {
     if (!profile) return;
     async function load() {
+      // Trilhas da empresa
       const { data: trilhasData } = await supabase
         .from("trilhas").select("*")
         .eq("company", profile!.company)
         .order("sector").order("order_num");
+
+      // Verifica se há controle de acesso — se sim, filtra
+      const { data: accessData } = await supabase
+        .from("user_trilha_access").select("trilha_id")
+        .eq("user_id", profile!.id);
+
+      // Se o usuário tem registros de acesso, filtra; senão mostra todas (admin/manager)
+      const allowedIds = accessData && accessData.length > 0
+        ? accessData.map((a: any) => a.trilha_id)
+        : null;
+
+      const filteredTrilhas = allowedIds
+        ? (trilhasData ?? []).filter(t => allowedIds.includes(t.id))
+        : (trilhasData ?? []);
 
       const { data: certsData } = await supabase
         .from("certificates").select("trilha_id")
@@ -75,7 +90,7 @@ export default function Trilhas() {
         if (trilhaId) prog[trilhaId] = (prog[trilhaId] ?? 0) + 1;
       });
 
-      setTrilhas(trilhasData ?? []);
+      setTrilhas(filteredTrilhas);
       setCertificates((certsData ?? []).map(c => c.trilha_id));
       setProgress(prog);
       setLoading(false);

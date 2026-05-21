@@ -78,7 +78,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <span className="text-gold animate-pulse">Carregando dashboard...</span>
+      <span className="animate-pulse text-sm" style={{ color: "#f5a623" }}>Carregando dashboard...</span>
     </div>
   );
 
@@ -103,8 +103,8 @@ export default function Dashboard() {
 
       {/* Título */}
       <div>
-        <h1 className="text-2xl font-bold">Dashboard de Gestão</h1>
-        <p className="text-sm opacity-50 mt-1">Acompanhe o progresso da sua equipe em tempo real.</p>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--soma-text)" }}>Dashboard de Gestão</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--soma-muted)" }}>Acompanhe o progresso da sua equipe em tempo real.</p>
       </div>
 
       {/* Cards de métricas */}
@@ -112,36 +112,37 @@ export default function Dashboard() {
         {[
           { label: "Colaboradores", value: totalMembers, icon: Users, color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
           { label: "Onboarding completo", value: onboardingDone, icon: CheckCircle2, color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)" },
-          { label: "Média nos quizzes", value: `${avgQuizScore}%`, icon: Trophy, color: "text-gold", bg: "bg-gold/5 border-gold/20" },
+          { label: "Média nos quizzes", value: `${avgQuizScore}%`, icon: Trophy, color: "#f5a623", bg: "rgba(245,166,35,0.1)", border: "rgba(245,166,35,0.2)" },
           { label: "Sem progresso", value: atRisk, icon: AlertCircle, color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className={`card-base border rounded-xl ${bg}`}>
-            <div className={`${color} mb-2`}><Icon size={20} /></div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs opacity-60 mt-0.5">{label}</p>
+        ].map(({ label, value, icon: Icon, color, bg, border }) => (
+          <div key={label} className="rounded-2xl p-5"
+            style={{ backgroundColor: "var(--soma-card)", border: `1px solid ${border}` }}>
+            <div className="mb-3"><Icon size={20} style={{ color }} /></div>
+            <p className="text-2xl font-bold" style={{ color: "var(--soma-text)" }}>{value}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--soma-muted)" }}>{label}</p>
           </div>
         ))}
       </div>
 
       {/* Tabela da equipe */}
       <div>
-        <h2 className="text-sm font-bold uppercase tracking-widest opacity-40 mb-4">Equipe</h2>
+        <h2 className="text-sm font-bold uppercase tracking-widest mb-4" style={{ color: "var(--soma-muted)" }}>Equipe</h2>
         {team.length === 0 ? (
-          <div className="card-base border border-soma-border bg-white text-center py-10">
+          <div className="rounded-2xl border p-10 text-center" style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
             <Users size={32} className="mx-auto opacity-20 mb-2" />
             <p className="text-sm opacity-50">Nenhum colaborador cadastrado ainda.</p>
             <p className="text-xs opacity-30 mt-1">Adicione colaboradores com role = "collaborator" no Supabase.</p>
           </div>
         ) : (
-          <div className="card-base border border-soma-border bg-white overflow-hidden p-0">
+          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-soma-border bg-soma-bg">
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Colaborador</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Setor</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Checklist</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Melhor quiz</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Status</th>
+                <tr style={{ borderBottom: "1px solid var(--soma-border)", backgroundColor: "var(--soma-bg)" }}>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Colaborador</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Setor</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Checklist</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Melhor quiz</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,20 +160,20 @@ export default function Dashboard() {
                   const statusText = pct === 100 ? "#16a34a" : pct > 0 ? "#d97706" : "#dc2626";
 
                   return (
-                    <tr key={member.id} className="border-b border-soma-border last:border-0 hover:bg-soma-bg/50 transition-colors">
+                    <tr key={member.id} style={{ borderBottom: "1px solid var(--soma-border)" }}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="w-7 h-7 rounded-full bg-gold/20 text-gold text-xs font-bold flex items-center justify-center">
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: "rgba(245,166,35,0.15)", color: "#f5a623" }}>
                             {member.full_name?.[0]?.toUpperCase()}
                           </span>
-                          <span className="font-medium">{member.full_name}</span>
+                          <span className="font-medium" style={{ color: "var(--soma-text)" }}>{member.full_name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 uppercase text-xs opacity-60">{member.sector}</td>
+                      <td className="px-4 py-3 uppercase text-xs" style={{ color: "var(--soma-muted)" }}>{member.sector}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-1.5 bg-soma-bg rounded-full overflow-hidden">
-                            <div className="h-full bg-gold rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--soma-bg)" }}>
+                            <div className="h-full rounded-full transition-all" style={{ backgroundColor: "#f5a623" }} style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-xs opacity-60">{pct}%</span>
                         </div>
@@ -180,7 +181,7 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-xs">
                         {bestQuiz !== null
                           ? <span className="font-semibold" style={{ color: bestQuiz >= 70 ? "#16a34a" : "#dc2626" }}>{bestQuiz}%</span>
-                          : <span className="opacity-30">—</span>}
+                          : <span style={{ color: "var(--soma-muted)" }}>—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: statusBg, color: statusText }}>{status}</span>
@@ -197,16 +198,16 @@ export default function Dashboard() {
       {/* Últimos quizzes */}
       {quizzes.length > 0 && (
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-widest opacity-40 mb-4">Últimas tentativas de quiz</h2>
-          <div className="card-base border border-soma-border bg-white overflow-hidden p-0">
+          <h2 className="text-sm font-bold uppercase tracking-widest mb-4" style={{ color: "var(--soma-muted)" }}>Últimas tentativas de quiz</h2>
+          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-soma-border bg-soma-bg">
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Colaborador</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Guia</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Aba</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Resultado</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold opacity-50">Data</th>
+                <tr style={{ borderBottom: "1px solid var(--soma-border)", backgroundColor: "var(--soma-bg)" }}>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Colaborador</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Guia</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Aba</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Resultado</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--soma-muted)" }}>Data</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,16 +215,16 @@ export default function Dashboard() {
                   const member = team.find(m => m.id === q.user_id);
                   const pct = Math.round((q.score / q.total) * 100);
                   return (
-                    <tr key={i} className="border-b border-soma-border last:border-0 hover:bg-soma-bg/50">
-                      <td className="px-4 py-3 font-medium">{member?.full_name ?? "—"}</td>
-                      <td className="px-4 py-3 uppercase text-xs opacity-60">{q.guide}</td>
-                      <td className="px-4 py-3 text-xs opacity-60 capitalize">{q.tab}</td>
+                    <tr key={i} style={{ borderBottom: "1px solid var(--soma-border)" }}>
+                      <td className="px-4 py-3 font-medium" style={{ color: "var(--soma-text)" }}>{member?.full_name ?? "—"}</td>
+                      <td className="px-4 py-3 uppercase text-xs" style={{ color: "var(--soma-muted)" }}>{q.guide}</td>
+                      <td className="px-4 py-3 text-xs capitalize" style={{ color: "var(--soma-muted)" }}>{q.tab}</td>
                       <td className="px-4 py-3">
                         <span className="text-xs font-semibold" style={{ color: pct >= 70 ? "#16a34a" : "#dc2626" }}>
                           {q.score}/{q.total} ({pct}%)
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs opacity-50">
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--soma-muted)" }}>
                         {new Date(q.attempted_at).toLocaleDateString("pt-BR")}
                       </td>
                     </tr>

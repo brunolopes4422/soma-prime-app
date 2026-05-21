@@ -110,10 +110,10 @@ export default function Dashboard() {
       {/* Cards de métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Colaboradores", value: totalMembers, icon: Users, color: "text-blue-500", bg: "bg-blue-50 border-blue-200" },
-          { label: "Onboarding completo", value: onboardingDone, icon: CheckCircle2, color: "text-green-500", bg: "bg-green-50 border-green-200" },
+          { label: "Colaboradores", value: totalMembers, icon: Users, color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
+          { label: "Onboarding completo", value: onboardingDone, icon: CheckCircle2, color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)" },
           { label: "Média nos quizzes", value: `${avgQuizScore}%`, icon: Trophy, color: "text-gold", bg: "bg-gold/5 border-gold/20" },
-          { label: "Sem progresso", value: atRisk, icon: AlertCircle, color: "text-red-500", bg: "bg-red-50 border-red-200" },
+          { label: "Sem progresso", value: atRisk, icon: AlertCircle, color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className={`card-base border rounded-xl ${bg}`}>
             <div className={`${color} mb-2`}><Icon size={20} /></div>
@@ -155,7 +155,8 @@ export default function Dashboard() {
                   const checkDone = check?.completed ?? 0;
                   const pct = Math.round((checkDone / checkTotal) * 100);
                   const status = pct === 100 ? "Completo" : pct > 0 ? "Em progresso" : "Não iniciado";
-                  const statusColor = pct === 100 ? "bg-green-100 text-green-700" : pct > 0 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700";
+                  const statusBg = pct === 100 ? "rgba(34,197,94,0.12)" : pct > 0 ? "rgba(245,166,35,0.12)" : "rgba(248,113,113,0.12)";
+                  const statusText = pct === 100 ? "#16a34a" : pct > 0 ? "#d97706" : "#dc2626";
 
                   return (
                     <tr key={member.id} className="border-b border-soma-border last:border-0 hover:bg-soma-bg/50 transition-colors">
@@ -178,11 +179,11 @@ export default function Dashboard() {
                       </td>
                       <td className="px-4 py-3 text-xs">
                         {bestQuiz !== null
-                          ? <span className={`font-semibold ${bestQuiz >= 70 ? "text-green-600" : "text-red-500"}`}>{bestQuiz}%</span>
+                          ? <span className="font-semibold" style={{ color: bestQuiz >= 70 ? "#16a34a" : "#dc2626" }}>{bestQuiz}%</span>
                           : <span className="opacity-30">—</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>{status}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: statusBg, color: statusText }}>{status}</span>
                       </td>
                     </tr>
                   );
@@ -218,7 +219,7 @@ export default function Dashboard() {
                       <td className="px-4 py-3 uppercase text-xs opacity-60">{q.guide}</td>
                       <td className="px-4 py-3 text-xs opacity-60 capitalize">{q.tab}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold ${pct >= 70 ? "text-green-600" : "text-red-500"}`}>
+                        <span className="text-xs font-semibold" style={{ color: pct >= 70 ? "#16a34a" : "#dc2626" }}>
                           {q.score}/{q.total} ({pct}%)
                         </span>
                       </td>

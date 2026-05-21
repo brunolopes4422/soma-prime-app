@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { getTheme } from "../../styles/themes";
 import type { CompanyKey } from "../../styles/themes";
-import { Trophy, Lock, CheckCircle2, ChevronRight, Star } from "lucide-react";
+import { Trophy, Lock, CheckCircle2, ChevronRight, Star, BookOpen, Play, Users, FileText, Briefcase, BookMarked, Calculator, Monitor, Zap } from "lucide-react";
 
 interface Trilha {
   id: string;
@@ -13,65 +13,83 @@ interface Trilha {
   sector: string;
   level: number;
   order_num: number;
-  total_lessons?: number;
-  completed_lessons?: number;
 }
 
-const levelLabel: Record<number, string> = {
-  1: "Júnior",
-  2: "Pleno",
-  3: "Sênior",
-  4: "Gestor",
+const levelLabel: Record<number, string> = { 1: "Júnior", 2: "Pleno", 3: "Sênior", 4: "Gestor" };
+const levelColor: Record<number, { bg: string; text: string; border: string }> = {
+  1: { bg: "rgba(34,197,94,0.12)",   text: "#16a34a", border: "rgba(34,197,94,0.25)" },
+  2: { bg: "rgba(96,165,250,0.12)",  text: "#2563eb", border: "rgba(96,165,250,0.25)" },
+  3: { bg: "rgba(168,85,247,0.12)",  text: "#9333ea", border: "rgba(168,85,247,0.25)" },
+  4: { bg: "rgba(245,166,35,0.12)",  text: "#f5a623", border: "rgba(245,166,35,0.25)" },
+};
+const levelGradient: Record<number, string> = {
+  1: "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))",
+  2: "linear-gradient(135deg, rgba(96,165,250,0.08), rgba(96,165,250,0.02))",
+  3: "linear-gradient(135deg, rgba(168,85,247,0.08), rgba(168,85,247,0.02))",
+  4: "linear-gradient(135deg, rgba(245,166,35,0.08), rgba(245,166,35,0.02))",
 };
 
-const levelColor: Record<number, string> = {
-  1: "bg-green-100 text-green-700 border-green-200",
-  2: "bg-blue-100 text-blue-700 border-blue-200",
-  3: "bg-purple-100 text-purple-700 border-purple-200",
-  4: "bg-gold/10 text-gold border-gold/20",
-};
-
-const sectorIcon: Record<string, string> = {
-  cs:     "👥",
-  fiscal: "📄",
-  dp:     "💼",
+const sectorConfig: Record<string, { label: string; icon: any; color: string }> = {
+  cs:          { label: "Customer Success",     icon: Users,      color: "#f5a623" },
+  fiscal:      { label: "Fiscal",               icon: FileText,   color: "#60a5fa" },
+  dp:          { label: "Departamento Pessoal", icon: Briefcase,  color: "#a78bfa" },
+  contabil:    { label: "Contábil",             icon: BookMarked, color: "#34d399" },
+  omie:        { label: "OMIE / Financeiro",    icon: Calculator, color: "#fb923c" },
+  informatica: { label: "Informática",          icon: Monitor,    color: "#22d3ee" },
 };
 
 export default function Trilhas() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const theme = getTheme((profile?.company as CompanyKey) ?? "soma_prime");
-  const [trilhas, setTrilhas] = useState<Trilha[]>([]);
+
+  const [trilhas, setTrilhas]         = useState<Trilha[]>([]);
   const [certificates, setCertificates] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [progress, setProgress]       = useState<Record<string, number>>({});
+  const [loading, setLoading]         = useState(true);
+  const [expandedSector, setExpandedSector] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) return;
     async function load() {
-      // Busca trilhas da empresa
       const { data: trilhasData } = await supabase
-        .from("trilhas")
-        .select("*")
+        .from("trilhas").select("*")
         .eq("company", profile!.company)
-        .order("sector")
-        .order("order_num");
+        .order("sector").order("order_num");
 
-      // Busca certificados do usuário
       const { data: certsData } = await supabase
-        .from("certificates")
-        .select("trilha_id")
+        .from("certificates").select("trilha_id")
         .eq("user_id", profile!.id);
+
+      // Busca progresso por trilha
+      const { data: progressData } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed, lessons(module_id, modules(trilha_id))")
+        .eq("user_id", profile!.id)
+        .eq("completed", true);
+
+      // Monta mapa de progresso
+      const prog: Record<string, number> = {};
+      (progressData ?? []).forEach((p: any) => {
+        const trilhaId = p.lessons?.modules?.trilha_id;
+        if (trilhaId) prog[trilhaId] = (prog[trilhaId] ?? 0) + 1;
+      });
 
       setTrilhas(trilhasData ?? []);
       setCertificates((certsData ?? []).map(c => c.trilha_id));
+      setProgress(prog);
       setLoading(false);
+
+      // Todos os setores começam fechados
+      if (trilhasData && trilhasData.length > 0) {
+      }
     }
     load();
   }, [profile]);
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <span className="text-gold animate-pulse">Carregando trilhas...</span>
+      <span className="animate-pulse text-sm" style={{ color: "#f5a623" }}>Carregando trilhas...</span>
     </div>
   );
 
@@ -82,105 +100,165 @@ export default function Trilhas() {
     return acc;
   }, {} as Record<string, Trilha[]>);
 
+  const totalCerts = certificates.length;
+  const totalTrilhas = trilhas.length;
+  const inProgress = Object.keys(progress).filter(id => !certificates.includes(id) && progress[id] > 0).length;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
 
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">🎓 Escola {theme.name}</h1>
-        <p className="opacity-50 text-sm">
+      <div>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--soma-text)" }}>🎓 Escola {theme.name}</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--soma-muted)" }}>
           Sua jornada de desenvolvimento profissional. Complete as trilhas e avance na carreira.
         </p>
       </div>
 
-      {/* Resumo */}
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Trilhas disponíveis", value: trilhas.length, icon: "📚" },
-          { label: "Certificados obtidos", value: certificates.length, icon: "🏆" },
-          { label: "Em progresso", value: trilhas.length - certificates.length, icon: "⚡" },
-        ].map(({ label, value, icon }) => (
-          <div key={label} className="card-base border border-soma-border/30 bg-soma-card text-center">
-            <span className="text-2xl">{icon}</span>
-            <p className="text-2xl font-bold mt-1 text-soma-text">{value}</p>
-            <p className="text-xs text-soma-muted mt-0.5">{label}</p>
+          { label: "Trilhas disponíveis", value: totalTrilhas, icon: BookOpen, color: "#f5a623" },
+          { label: "Certificados obtidos", value: totalCerts,  icon: Trophy,   color: "#22c55e" },
+          { label: "Em progresso",         value: inProgress,  icon: Zap,      color: "#60a5fa" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="rounded-2xl border p-5 text-center transition-all"
+            style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: `${color}15` }}>
+              <Icon size={20} style={{ color }} />
+            </div>
+            <p className="text-2xl font-bold" style={{ color: "var(--soma-text)" }}>{value}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--soma-muted)" }}>{label}</p>
           </div>
         ))}
       </div>
 
-      {/* Trilhas por setor */}
-      {Object.entries(grouped).map(([sector, items]) => (
-        <div key={sector}>
-          <h2 className="text-xs uppercase tracking-widest opacity-40 mb-4">
-            {sectorIcon[sector]} {sector === "cs" ? "Customer Success" : sector === "fiscal" ? "Fiscal" : "Departamento Pessoal"}
-          </h2>
-          <div className="space-y-3">
-            {items.map((trilha, idx) => {
-              const isCompleted = certificates.includes(trilha.id);
-              const isLocked = idx > 0 && !certificates.includes(items[idx - 1].id);
+      {/* Setores */}
+      {Object.entries(grouped).map(([sector, items]) => {
+        const cfg = sectorConfig[sector] ?? { label: sector, icon: BookOpen, color: "#f5a623" };
+        const SectorIcon = cfg.icon;
+        const isExpanded = expandedSector === sector;
+        const sectorCerts = items.filter(t => certificates.includes(t.id)).length;
 
-              return (
-                <button
-                  key={trilha.id}
-                  onClick={() => !isLocked && navigate(`/trilhas/${trilha.id}`)}
-                  disabled={isLocked}
-                  className={`w-full text-left card-base border group transition-all duration-200
-                    ${isCompleted
-                      ? "border-green-500/30 hover:border-green-500/60"
-                      : isLocked
-                        ? "opacity-40 cursor-not-allowed"
-                        : "hover:border-gold-light/60 hover:shadow-lg hover:shadow-gold-light/5"}`}
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Ícone status */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
-                      ${isCompleted ? "bg-green-100" : isLocked ? "bg-soma-bg" : "bg-gold/10"}`}>
-                      {isCompleted
-                        ? <CheckCircle2 size={20} className="text-green-500" />
-                        : isLocked
-                          ? <Lock size={18} className="opacity-30" />
-                          : <Star size={18} className="text-gold" />
-                      }
-                    </div>
+        return (
+          <div key={sector}>
+            {/* Header do setor — clicável */}
+            <button
+              onClick={() => setExpandedSector(isExpanded ? null : sector)}
+              className="w-full flex items-center gap-3 mb-4 group"
+            >
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${cfg.color}15` }}>
+                <SectorIcon size={16} style={{ color: cfg.color }} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--soma-text)" }}>
+                  {cfg.label}
+                </p>
+                <p className="text-xs" style={{ color: "var(--soma-muted)" }}>
+                  {sectorCerts}/{items.length} trilhas concluídas
+                </p>
+              </div>
+              <ChevronRight size={16}
+                className="transition-transform duration-300"
+                style={{ color: "var(--soma-muted)", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
+              />
+            </button>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{trilha.title}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${levelColor[trilha.level]}`}>
-                          {levelLabel[trilha.level]}
-                        </span>
-                        {isCompleted && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200 font-medium flex items-center gap-1">
-                            <Trophy size={10} /> Certificado
+            {/* Cards das trilhas */}
+            {isExpanded && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                {items.map((trilha, idx) => {
+                  const isCompleted = certificates.includes(trilha.id);
+                  const isLocked    = idx > 0 && !certificates.includes(items[idx - 1].id);
+                  const lc          = levelColor[trilha.level] ?? levelColor[1];
+                  const doneLessons = progress[trilha.id] ?? 0;
+
+                  return (
+                    <button
+                      key={trilha.id}
+                      onClick={() => !isLocked && navigate(`/trilhas/${trilha.id}`)}
+                      disabled={isLocked}
+                      className="text-left rounded-2xl border p-5 transition-all duration-200 group relative overflow-hidden"
+                      style={{
+                        backgroundColor: "var(--soma-card)",
+                        borderColor: isCompleted ? "rgba(34,197,94,0.3)" : isLocked ? "var(--soma-border)" : "var(--soma-border)",
+                        opacity: isLocked ? 0.5 : 1,
+                        cursor: isLocked ? "not-allowed" : "pointer",
+                      }}
+                      onMouseEnter={e => { if (!isLocked) e.currentTarget.style.borderColor = lc.border; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = isCompleted ? "rgba(34,197,94,0.3)" : "var(--soma-border)"; }}
+                    >
+                      {/* Fundo sutil de nível */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-2xl"
+                        style={{ background: isLocked ? "none" : levelGradient[trilha.level] }} />
+
+                      <div className="relative space-y-4">
+                        {/* Topo: badge nível + ícone status */}
+                        <div className="flex items-start justify-between">
+                          <span className="text-xs px-2.5 py-1 rounded-full font-semibold border"
+                            style={{ backgroundColor: lc.bg, color: lc.text, borderColor: lc.border }}>
+                            {levelLabel[trilha.level]}
                           </span>
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: isCompleted ? "rgba(34,197,94,0.12)" : isLocked ? "var(--soma-bg)" : lc.bg }}>
+                            {isCompleted
+                              ? <CheckCircle2 size={18} style={{ color: "#22c55e" }} />
+                              : isLocked
+                                ? <Lock size={16} style={{ color: "var(--soma-muted)" }} />
+                                : doneLessons > 0
+                                  ? <Play size={16} style={{ color: lc.text }} />
+                                  : <Star size={16} style={{ color: lc.text }} />
+                            }
+                          </div>
+                        </div>
+
+                        {/* Título e descrição */}
+                        <div>
+                          <p className="font-bold text-base leading-snug mb-1" style={{ color: "var(--soma-text)" }}>
+                            {trilha.title.replace(/^CS (Júnior|Pleno|Sênior|Gestor) — /, "").replace(/^DP (Júnior|Pleno) — /, "")}
+                          </p>
+                          <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "var(--soma-muted)" }}>
+                            {trilha.description}
+                          </p>
+                        </div>
+
+                        {/* Rodapé: progresso ou certificado */}
+                        {isCompleted ? (
+                          <div className="flex items-center gap-2 text-xs font-semibold"
+                            style={{ color: "#22c55e" }}>
+                            <Trophy size={13} /> Certificado emitido
+                          </div>
+                        ) : isLocked ? (
+                          <div className="flex items-center gap-2 text-xs"
+                            style={{ color: "var(--soma-muted)" }}>
+                            <Lock size={12} /> Conclua a trilha anterior
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <div className="h-1.5 rounded-full overflow-hidden"
+                              style={{ backgroundColor: "var(--soma-bg)" }}>
+                              <div className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${doneLessons > 0 ? Math.min(doneLessons * 5, 95) : 0}%`, backgroundColor: lc.text }} />
+                            </div>
+                            <div className="flex justify-between text-xs" style={{ color: "var(--soma-muted)" }}>
+                              <span>{doneLessons > 0 ? `${doneLessons} aulas concluídas` : "Não iniciada"}</span>
+                              <span style={{ color: lc.text }}>
+                                {doneLessons > 0 ? `${Math.min(doneLessons * 5, 95)}%` : "0%"}
+                              </span>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      <p className="text-xs opacity-50 mt-0.5 truncate">{trilha.description}</p>
-                    </div>
-
-                    {/* Seta */}
-                    {!isLocked && (
-                      <ChevronRight size={16} className="opacity-30 group-hover:opacity-70 group-hover:text-gold transition-all shrink-0" />
-                    )}
-                  </div>
-
-                  {/* Barra de progresso */}
-                  {!isLocked && !isCompleted && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-soma-bg rounded-full overflow-hidden">
-                        <div className="h-full bg-gold rounded-full w-0" />
-                      </div>
-                      <span className="text-xs opacity-30">0%</span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
-
+        );
+      })}
     </div>
   );
 }

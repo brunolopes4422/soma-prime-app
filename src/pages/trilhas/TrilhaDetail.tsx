@@ -1,43 +1,34 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
-
 import { useTrilha } from "../../hooks/useTrilha";
 import {
-  ChevronLeft, ChevronDown, CheckCircle2, Play, Trophy,
-  Clock, BookOpen, MessageCircle, PenLine, Send, Bot,
-  X, Search, Flame, Star
+  ChevronLeft, ChevronRight, CheckCircle2, Play, Trophy,
+  Clock, MessageCircle, Send, Bot, X, Flame, Menu,
+  BookOpen, PenLine, Lock, SkipBack, SkipForward,
+  Maximize2, Pause, Star, AlertTriangle
 } from "lucide-react";
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 interface Trilha { id: string; title: string; description: string; sector: string; level: number; }
 interface Comment { id: string; content: string; created_at: string; profiles: { full_name: string } | null; }
-interface GlossaryTerm { id: string; term: string; definition: string; }
-interface Badge { key: string; title: string; description: string; icon: string; earned: boolean; }
 
 const levelLabel: Record<number, string> = { 1: "Júnior", 2: "Pleno", 3: "Sênior", 4: "Gestor" };
-const levelColors: Record<number, { bg: string; text: string; border: string }> = {
-  1: { bg: "rgba(22,163,74,0.15)",  text: "#4ade80", border: "rgba(22,163,74,0.3)" },
-  2: { bg: "rgba(96,165,250,0.15)", text: "#93c5fd", border: "rgba(96,165,250,0.3)" },
-  3: { bg: "rgba(168,85,247,0.15)", text: "#d8b4fe", border: "rgba(168,85,247,0.3)" },
-  4: { bg: "rgba(245,166,35,0.15)", text: "#f5a623", border: "rgba(245,166,35,0.3)" },
-};
+const levelColor: Record<number, string> = { 1: "#22c55e", 2: "#60a5fa", 3: "#a855f7", 4: "#f5a623" };
 
 // ─── STREAK ───────────────────────────────────────────────────────────────────
-function StreakBadge({ userId }: { userId: string }) {
+function useStreak(userId: string) {
   const [streak, setStreak] = useState(0);
   useEffect(() => {
+    if (!userId) return;
     async function load() {
       const today = new Date().toISOString().split("T")[0];
       const { data } = await supabase.from("study_streaks").select("*").eq("user_id", userId).single();
-      if (!data) {
-        await supabase.from("study_streaks").insert({ user_id: userId, current: 1, longest: 1, last_date: today });
-        setStreak(1); return;
-      }
+      if (!data) { await supabase.from("study_streaks").insert({ user_id: userId, current: 1, longest: 1, last_date: today }); setStreak(1); return; }
+      if (data.last_date === today) { setStreak(data.current); return; }
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
       const yStr = yesterday.toISOString().split("T")[0];
-      if (data.last_date === today) { setStreak(data.current); return; }
       const newCurrent = data.last_date === yStr ? data.current + 1 : 1;
       const newLongest = Math.max(newCurrent, data.longest);
       await supabase.from("study_streaks").update({ current: newCurrent, longest: newLongest, last_date: today }).eq("user_id", userId);
@@ -45,251 +36,235 @@ function StreakBadge({ userId }: { userId: string }) {
     }
     load();
   }, [userId]);
-  if (!streak) return null;
-  return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
-      style={{ backgroundColor: "rgba(245,166,35,0.15)", border: "1px solid rgba(245,166,35,0.3)", color: "#f5a623" }}>
-      <Flame size={13} /> {streak} {streak === 1 ? "dia" : "dias"} seguidos
-    </div>
-  );
+  return streak;
 }
 
-// ─── IA TUTORA ────────────────────────────────────────────────────────────────
-function AcademyAI({ lessonTitle, lessonContent, trilhaTitle }: { lessonTitle: string; lessonContent: string; trilhaTitle: string }) {
-  const [open, setOpen] = useState(false);
+// ─── IA TUTORA (modal) ────────────────────────────────────────────────────────
+function AIModal({ lessonTitle, lessonContent, trilhaTitle, onClose }: {
+  lessonTitle: string; lessonContent: string; trilhaTitle: string; onClose: () => void;
+}) {
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
-
-  const suggestions = [
-    "Pode me dar um exemplo prático?",
-    "Qual o erro mais comum nessa situação?",
-    "Como isso funciona no dia a dia?",
-  ];
+  const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY ?? "";
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  const suggestions = ["Pode me dar um exemplo prático?", "Qual o erro mais comum aqui?", "Como isso funciona na prática?"];
+
   async function send(text?: string) {
-    const msg = text ?? input.trim();
+    const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setInput("");
     const newMessages = [...messages, { role: "user" as const, content: msg }];
     setMessages(newMessages);
     setLoading(true);
     try {
-      const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY ?? "";
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_KEY}`,
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_KEY}` },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [
-            {
-              role: "system",
-              content: "Você é a Tutora da Soma Prime Academy — especialista em contabilidade com domínio completo de rotinas fiscais, departamento pessoal, contabilidade societária e customer success para empresas de pequeno, médio e grande porte.\n\nSeu papel é capacitar os colaboradores da Soma Prime com conhecimento técnico sólido e postura profissional de excelência.\n\nPERSONALIDADE:\n- Educada e acolhedora no tom, mas firme e rigorosa no conteúdo\n- Não normaliza erros, atrasos ou procedimentos incorretos\n- Quando o assunto envolve multas, prazos críticos, penalidades ou riscos ao cliente, seja DIRETA e SÉRIA: deixe claro que esses erros têm consequências reais para o cliente e para o escritório\n- O cliente contratou a Soma Prime para ECONOMIZAR e estar SEGURO — qualquer erro que gere multa ou penalidade é uma falha grave que precisa ser evitada a todo custo\n- Nunca use frases como 'isso acontece', 'é normal', 'não se preocupe' para situações de erro ou atraso — seja construtiva mas deixe claro o peso da responsabilidade\n\nREGRAS QUE NUNCA QUEBRA:\n1. Responda SEMPRE em português brasileiro\n2. Seja didática e use exemplos reais do dia a dia contábil\n3. Máximo 3 parágrafos por resposta\n4. Use emojis com moderação\n5. SEMPRE oriente a consultar os manuais oficiais do governo (Receita Federal, e-CAC, Portal do Simples Nacional, eSocial) quando a dúvida envolver legislação\n6. NUNCA passe informação como definitiva sem recomendar confirmação com o chefe do setor ou superior direto\n7. SEMPRE finalize com: ⚠️ Consulte os manuais oficiais e confirme com o responsável do setor antes de aplicar qualquer procedimento!\n\nLembre-se: você é uma tutora rigorosa porque se importa — erro contábil não é detalhe, é prejuízo real para o cliente." + " Aula atual: " + lessonTitle + " | Trilha: " + trilhaTitle + " | Conteúdo: " + (lessonContent?.slice(0, 800) ?? "")
-            },
+            { role: "system", content: `Você é a Tutora da Soma Prime Academy — especialista em contabilidade. Aula: "${lessonTitle}" | Trilha: "${trilhaTitle}". Conteúdo: ${lessonContent?.slice(0, 800) ?? ""}. Responda em português brasileiro, seja direta e prática, máximo 3 parágrafos. SEMPRE termine com: "⚠️ Consulte os manuais oficiais e confirme com o responsável do setor antes de aplicar qualquer procedimento!"` },
             ...newMessages.map(m => ({ role: m.role, content: m.content }))
           ],
-          temperature: 0.7,
-          max_tokens: 500,
+          temperature: 0.7, max_tokens: 500,
         }),
       });
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content ?? "Não consegui responder agora. Tente novamente!";
+      let reply = data.choices?.[0]?.message?.content ?? "Não consegui responder. Tente novamente!";
+      if (!reply.includes("gestor") && !reply.includes("responsável")) reply += "\n\n⚠️ Consulte os manuais oficiais e confirme com o responsável do setor antes de aplicar!";
       setMessages(m => [...m, { role: "assistant", content: reply }]);
     } catch {
-      setMessages(m => [...m, { role: "assistant", content: "Ops! Não consegui responder agora. Tente novamente em instantes." }]);
+      setMessages(m => [...m, { role: "assistant", content: "Ops! Erro de conexão. Tente novamente. 😅" }]);
     }
     setLoading(false);
   }
 
   return (
-    <>
-      <button onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full justify-center transition-all"
-        style={{ backgroundColor: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.3)", color: "#d8b4fe" }}>
-        <Bot size={15} /> Perguntar para IA Tutora
-      </button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}>
+      <div className="w-full max-w-lg rounded-2xl flex flex-col overflow-hidden"
+        style={{ backgroundColor: "var(--soma-card)", border: "1px solid rgba(168,85,247,0.3)", maxHeight: "85vh", boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 shrink-0"
+          style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(168,85,247,0.1))", borderBottom: "1px solid rgba(168,85,247,0.2)" }}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
+            <Bot size={18} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm" style={{ color: "#d8b4fe" }}>IA Tutora — Soma Prime Academy</p>
+            <p className="text-xs truncate" style={{ color: "var(--soma-muted)" }}>Aula: {lessonTitle}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center hover:opacity-70" style={{ color: "var(--soma-muted)" }}><X size={16} /></button>
+        </div>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col shadow-2xl"
-            style={{ backgroundColor: "var(--soma-card)", border: "1px solid rgba(168,85,247,0.4)", maxHeight: "82vh" }}>
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "rgba(168,85,247,0.2)" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(168,85,247,0.2)" }}>
-                  <Bot size={18} style={{ color: "#d8b4fe" }} />
-                </div>
-                <div>
-                  <p className="font-bold text-sm" style={{ color: "var(--soma-text)" }}>IA Tutora — Soma Prime Academy</p>
-                  <p className="text-xs" style={{ color: "#d8b4fe" }}>Especialista em CS contábil • Aula: {lessonTitle}</p>
-                </div>
-              </div>
-              <button onClick={() => setOpen(false)} style={{ color: "var(--soma-muted)" }}><X size={18} /></button>
-            </div>
-
-            {/* Mensagens */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[240px]">
-              {messages.length === 0 && (
-                <div className="text-center py-6 space-y-4">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: "rgba(168,85,247,0.15)" }}>
-                    <Bot size={28} style={{ color: "#d8b4fe" }} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: "var(--soma-text)" }}>Olá! Sou sua tutora nesta aula 👋</p>
-                    <p className="text-xs mt-1" style={{ color: "var(--soma-muted)" }}>Tire qualquer dúvida sobre <strong>"{lessonTitle}"</strong></p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {suggestions.map(s => (
-                      <button key={s} onClick={() => send(s)}
-                        className="text-xs px-3 py-2 rounded-xl text-left transition-all hover:opacity-80"
-                        style={{ backgroundColor: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", color: "#d8b4fe" }}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} gap-2`}>
-                  {m.role === "assistant" && (
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "rgba(168,85,247,0.2)" }}>
-                      <Bot size={13} style={{ color: "#d8b4fe" }} />
-                    </div>
-                  )}
-                  <div className="max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
-                    style={m.role === "user"
-                      ? { backgroundColor: "#f5a623", color: "#000", borderBottomRightRadius: 4 }
-                      : { backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)", borderBottomLeftRadius: 4 }}>
-                    {m.content}
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start gap-2">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(168,85,247,0.2)" }}>
-                    <Bot size={13} style={{ color: "#d8b4fe" }} />
-                  </div>
-                  <div className="rounded-2xl px-4 py-3 text-sm" style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
-                    <span className="flex gap-1">
-                      {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: "#d8b4fe", animationDelay: `${i*150}ms` }} />)}
-                    </span>
-                  </div>
-                </div>
-              )}
-              <div ref={endRef} />
-            </div>
-
-            {/* Input */}
-            <div className="p-4 border-t" style={{ borderColor: "var(--soma-border)" }}>
+        {/* Mensagens */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-48">
+          {messages.length === 0 && (
+            <div className="space-y-3">
               <div className="flex gap-2">
-                <input value={input} onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
-                  placeholder="Digite sua dúvida sobre a aula..."
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm focus:outline-none"
-                  style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
-                <button onClick={() => send()} disabled={loading || !input.trim()}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-40 transition-all"
-                  style={{ backgroundColor: "#f5a623", color: "#000" }}>
-                  <Send size={15} />
-                </button>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
+                  <Bot size={13} className="text-white" />
+                </div>
+                <div className="rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed max-w-xs"
+                  style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }}>
+                  Olá! 👋 Estou aqui para tirar suas dúvidas sobre <strong style={{ color: "#d8b4fe" }}>{lessonTitle}</strong>.
+                  <br /><br />
+                  <span style={{ color: "#f5a623" }}>⚠️</span> Sempre confirme as informações com o responsável do setor!
+                </div>
               </div>
+              <div className="pl-9 space-y-1.5">
+                {suggestions.map(s => (
+                  <button key={s} onClick={() => send(s)}
+                    className="w-full text-left text-xs px-3 py-2 rounded-xl transition-all hover:opacity-80"
+                    style={{ backgroundColor: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", color: "#d8b4fe" }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} className={`flex gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              {m.role === "assistant" && (
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
+                  <Bot size={11} className="text-white" />
+                </div>
+              )}
+              <div className="text-xs leading-relaxed rounded-2xl px-3 py-2.5 max-w-xs whitespace-pre-wrap"
+                style={m.role === "user"
+                  ? { backgroundColor: "#7c3aed", color: "#fff", borderBottomRightRadius: 4 }
+                  : { backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)", borderBottomLeftRadius: 4 }}>
+                {m.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex gap-2">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
+                <Bot size={11} className="text-white" />
+              </div>
+              <div className="rounded-2xl px-3 py-2.5 flex gap-1" style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
+                {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: "#a855f7", animationDelay: `${i*150}ms` }} />)}
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+
+        {/* Aviso + Input */}
+        <div className="shrink-0">
+          <div className="px-4 py-1.5 flex items-center gap-1.5" style={{ backgroundColor: "rgba(245,166,35,0.05)", borderTop: "1px solid rgba(245,166,35,0.15)" }}>
+            <AlertTriangle size={10} style={{ color: "#f5a623" }} />
+            <p className="text-xs" style={{ color: "rgba(245,166,35,0.8)" }}>Confirme com o responsável do setor antes de aplicar!</p>
+          </div>
+          <div className="p-3" style={{ borderTop: "1px solid var(--soma-border)" }}>
+            <div className="flex gap-2">
+              <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()}
+                placeholder="Digite sua dúvida sobre a aula..."
+                className="flex-1 px-3 py-2 rounded-xl text-xs focus:outline-none"
+                style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
+              <button onClick={() => send()} disabled={loading || !input.trim()}
+                className="w-8 h-8 rounded-xl flex items-center justify-center disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
+                <Send size={13} className="text-white" />
+              </button>
             </div>
           </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
 
 // ─── COMENTÁRIOS ──────────────────────────────────────────────────────────────
-function LessonComments({ lessonId }: { lessonId: string }) {
+function Comments({ lessonId }: { lessonId: string }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
 
-  async function loadComments() {
+  const load = useCallback(async () => {
     const { data } = await supabase.from("lesson_comments").select("*, profiles(full_name)").eq("lesson_id", lessonId).order("created_at");
     setComments(data ?? []);
-  }
+  }, [lessonId]);
 
-  useEffect(() => { if (open) loadComments(); }, [open]);
+  useEffect(() => { load(); }, [load]);
 
   async function submit() {
     if (!text.trim() || !user || loading) return;
     setLoading(true);
     await supabase.from("lesson_comments").insert({ lesson_id: lessonId, user_id: user.id, content: text.trim() });
-    setText("");
-    await loadComments();
+    setText(""); await load();
     setLoading(false);
   }
 
-  return (
-    <div>
-      <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full justify-center transition-all"
-        style={{ backgroundColor: open ? "rgba(245,166,35,0.1)" : "var(--soma-bg)", border: `1px solid ${open ? "rgba(245,166,35,0.3)" : "var(--soma-border)"}`, color: open ? "#f5a623" : "var(--soma-muted)" }}>
-        <MessageCircle size={15} /> Comentários {comments.length > 0 && `(${comments.length})`}
-      </button>
+  const initials = (name: string) => name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() ?? "?";
 
-      {open && (
-        <div className="mt-3 space-y-3 border-t pt-3" style={{ borderColor: "var(--soma-border)" }}>
-          {comments.length === 0 && (
-            <p className="text-xs text-center py-3" style={{ color: "var(--soma-muted)" }}>Seja o primeiro a comentar! Compartilhe sua experiência com o time 💬</p>
-          )}
-          {comments.map(c => (
-            <div key={c.id} className="flex gap-2.5">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                style={{ backgroundColor: "rgba(245,166,35,0.15)", color: "#f5a623" }}>
-                {c.profiles?.full_name?.[0]?.toUpperCase() ?? "?"}
-              </div>
-              <div className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-semibold" style={{ color: "#f5a623" }}>{c.profiles?.full_name ?? "Colega"}</p>
-                  <p className="text-xs" style={{ color: "var(--soma-muted)" }}>{new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
-                </div>
-                <p className="text-sm" style={{ color: "var(--soma-text)" }}>{c.content}</p>
-              </div>
+  return (
+    <div className="space-y-4">
+      <h3 className="flex items-center gap-2 font-semibold text-sm" style={{ color: "var(--soma-text)" }}>
+        <MessageCircle size={16} style={{ color: "#f5a623" }} /> Comentários da aula ({comments.length})
+      </h3>
+
+      {/* Input */}
+      <div className="flex gap-3">
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+          style={{ backgroundColor: "rgba(245,166,35,0.15)", color: "#f5a623" }}>
+          {user ? initials((user as any).email ?? "") : "?"}
+        </div>
+        <div className="flex-1 space-y-2">
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={2}
+            placeholder="Adicione um comentário ou dúvida sobre esta aula..."
+            className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none resize-none"
+            style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
+          <button onClick={submit} disabled={loading || !text.trim()}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 transition-all"
+            style={{ backgroundColor: "#f5a623", color: "#000" }}>
+            <Send size={12} /> Comentar
+          </button>
+        </div>
+      </div>
+
+      {/* Lista */}
+      {comments.length === 0 && (
+        <p className="text-xs text-center py-3" style={{ color: "var(--soma-muted)" }}>Seja o primeiro a comentar! 💬</p>
+      )}
+      {comments.map(c => (
+        <div key={c.id} className="flex gap-3">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+            style={{ backgroundColor: "rgba(96,165,250,0.15)", color: "#60a5fa" }}>
+            {initials(c.profiles?.full_name ?? "?")}
+          </div>
+          <div className="flex-1 rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-semibold" style={{ color: "#f5a623" }}>{c.profiles?.full_name ?? "Colaborador"}</p>
+              <p className="text-xs" style={{ color: "var(--soma-muted)" }}>{new Date(c.created_at).toLocaleDateString("pt-BR")}</p>
             </div>
-          ))}
-          <div className="flex gap-2">
-            <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === "Enter" && submit()}
-              placeholder="Compartilhe sua experiência ou dúvida com o time..."
-              className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none"
-              style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
-            <button onClick={submit} disabled={loading || !text.trim()}
-              className="w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-40"
-              style={{ backgroundColor: "#f5a623", color: "#000" }}>
-              <Send size={14} />
-            </button>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--soma-text)" }}>{c.content}</p>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
 
 // ─── ANOTAÇÕES ────────────────────────────────────────────────────────────────
-function LessonNotes({ lessonId }: { lessonId: string }) {
+function Notes({ lessonId }: { lessonId: string }) {
   const { user } = useAuth();
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
-  const [open, setOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!open || !user) return;
+    if (!user) return;
     supabase.from("lesson_notes").select("content").eq("lesson_id", lessonId).eq("user_id", user.id).single()
       .then(({ data }) => { if (data) setNote(data.content); });
-  }, [lessonId, user, open]);
+  }, [lessonId, user]);
 
   function handleChange(val: string) {
     setNote(val); setSaved(false);
@@ -302,169 +277,154 @@ function LessonNotes({ lessonId }: { lessonId: string }) {
   }
 
   return (
-    <div>
-      <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full justify-center transition-all"
-        style={{ backgroundColor: open ? "rgba(96,165,250,0.1)" : "var(--soma-bg)", border: `1px solid ${open ? "rgba(96,165,250,0.3)" : "var(--soma-border)"}`, color: open ? "#93c5fd" : "var(--soma-muted)" }}>
-        <PenLine size={15} /> Minhas anotações
-      </button>
-      {open && (
-        <div className="mt-3 space-y-2 border-t pt-3" style={{ borderColor: "var(--soma-border)" }}>
-          <textarea value={note} onChange={e => handleChange(e.target.value)} rows={4}
-            placeholder="Anote os pontos mais importantes para revisar depois..."
-            className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none resize-none"
-            style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
-          <p className="text-xs" style={{ color: saved ? "#4ade80" : "var(--soma-muted)" }}>
-            {saved ? "✅ Salvo automaticamente" : "Digitando..."}
-          </p>
-        </div>
-      )}
+    <div className="space-y-2">
+      <h3 className="flex items-center gap-2 font-semibold text-sm" style={{ color: "var(--soma-text)" }}>
+        <PenLine size={16} style={{ color: "#60a5fa" }} /> Minhas anotações
+      </h3>
+      <textarea value={note} onChange={e => handleChange(e.target.value)} rows={4}
+        placeholder="Anote os pontos mais importantes para revisar depois..."
+        className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none resize-none"
+        style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
+      <p className="text-xs" style={{ color: saved ? "#4ade80" : "var(--soma-muted)" }}>
+        {saved ? "✅ Salvo automaticamente" : "Digitando..."}
+      </p>
     </div>
   );
 }
 
-// ─── GLOSSÁRIO ────────────────────────────────────────────────────────────────
-function Glossary({ sector }: { sector: string }) {
-  const [terms, setTerms] = useState<GlossaryTerm[]>([]);
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
+// ─── PLAYER DE VÍDEO ──────────────────────────────────────────────────────────
+function VideoPlayer({ url }: { url: string }) {
+  const ytId = url.match(/(?:v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+  if (!ytId) return null;
+  return (
+    <div style={{ aspectRatio: "16/9", backgroundColor: "#000" }}>
+      <iframe
+        src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+        className="w-full h-full"
+        allowFullScreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      />
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (!open) return;
-    supabase.from("glossary").select("*").eq("sector", sector).order("term").then(({ data }) => setTerms(data ?? []));
-  }, [sector, open]);
-
-  const filtered = terms.filter(t => t.term.toLowerCase().includes(search.toLowerCase()) || t.definition.toLowerCase().includes(search.toLowerCase()));
+// ─── CONTEÚDO DA AULA (estilo Notion) ─────────────────────────────────────────
+function LessonContent({ content }: { content: string }) {
+  if (!content?.trim()) return null;
+  const lines = content.split("\n");
 
   return (
-    <div>
-      <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full justify-center transition-all"
-        style={{ backgroundColor: open ? "rgba(22,163,74,0.1)" : "var(--soma-bg)", border: `1px solid ${open ? "rgba(22,163,74,0.3)" : "var(--soma-border)"}`, color: open ? "#4ade80" : "var(--soma-muted)" }}>
-        <BookOpen size={15} /> Glossário do CS
-      </button>
-      {open && (
-        <div className="mt-3 space-y-3 border-t pt-3" style={{ borderColor: "var(--soma-border)" }}>
-          <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--soma-muted)" }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar termo (DAS, SLA, CND...)"
-              className="w-full pl-8 pr-3 py-2 rounded-xl text-xs focus:outline-none"
-              style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)", color: "var(--soma-text)" }} />
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-2" />;
+
+        // Título com emoji (ex: "━━━ Título ━━━" ou linha com ━)
+        if (line.startsWith("━")) return (
+          <h3 key={i} className="font-semibold text-sm pt-4 pb-1 flex items-center gap-2"
+            style={{ color: "var(--soma-text)", borderTop: i > 0 ? "1px solid var(--soma-border)" : "none", marginTop: 8 }}>
+            {line.replace(/━/g, "").trim()}
+          </h3>
+        );
+
+        // Callout ⚠️
+        if (line.startsWith("⚠️")) return (
+          <div key={i} className="flex gap-3 p-3 rounded-xl my-2"
+            style={{ backgroundColor: "rgba(245,166,35,0.08)", border: "1px solid rgba(245,166,35,0.25)" }}>
+            <span className="shrink-0 text-sm">⚠️</span>
+            <p className="text-sm leading-relaxed" style={{ color: "#f5a623" }}>{line.replace("⚠️", "").trim()}</p>
           </div>
-          <div className="space-y-2 max-h-56 overflow-y-auto">
-            {filtered.map(t => (
-              <div key={t.id} className="rounded-xl p-3" style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
-                <p className="font-bold text-xs mb-1" style={{ color: "#f5a623" }}>{t.term}</p>
-                <p className="text-xs leading-relaxed" style={{ color: "var(--soma-muted)" }}>{t.definition}</p>
-              </div>
-            ))}
-            {filtered.length === 0 && <p className="text-xs text-center py-2" style={{ color: "var(--soma-muted)" }}>Nenhum termo encontrado.</p>}
+        );
+
+        // Passos numerados (1. 2. 3.)
+        if (/^\d+\./.test(line.trim())) {
+          const num = line.match(/^(\d+)\./)?.[1];
+          const text = line.replace(/^\d+\./, "").trim();
+          return (
+            <div key={i} className="flex gap-3 py-1.5">
+              <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
+                style={{ backgroundColor: "#f5a623", color: "#000" }}>{num}</span>
+              <p className="text-sm leading-relaxed flex-1" style={{ color: "var(--soma-muted)" }}>{text}</p>
+            </div>
+          );
+        }
+
+        // Bullets (•)
+        if (line.trim().startsWith("•")) return (
+          <div key={i} className="flex gap-2 py-0.5">
+            <span className="text-xs mt-1 shrink-0" style={{ color: "#f5a623" }}>•</span>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--soma-muted)" }}>{line.replace(/^•/, "").trim()}</p>
           </div>
-        </div>
-      )}
+        );
+
+        // Checklist ✅ ou ❌
+        if (line.trim().startsWith("✅") || line.trim().startsWith("❌")) return (
+          <div key={i} className="flex gap-2 py-0.5">
+            <span className="shrink-0 text-sm">{line.trim().startsWith("✅") ? "✅" : "❌"}</span>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--soma-muted)" }}>
+              {line.replace(/^✅|^❌/, "").trim()}
+            </p>
+          </div>
+        );
+
+        // Emojis de seção (📌 💡 📋 📅)
+        if (/^[📌💡📋📅🔴🟡🟢🟠🟣📊]/.test(line.trim())) return (
+          <p key={i} className="text-sm leading-relaxed py-0.5" style={{ color: "var(--soma-text)" }}>{line}</p>
+        );
+
+        // Texto normal
+        return <p key={i} className="text-sm leading-relaxed" style={{ color: "var(--soma-muted)" }}>{line}</p>;
+      })}
     </div>
   );
 }
 
-// ─── BADGES ───────────────────────────────────────────────────────────────────
-function BadgesPanel({ userId }: { userId: string }) {
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    async function load() {
-      const { data: all } = await supabase.from("badges").select("*").order("key");
-      const { data: earned } = await supabase.from("user_badges").select("badge_key").eq("user_id", userId);
-      const earnedSet = new Set((earned ?? []).map(e => e.badge_key));
-      setBadges((all ?? []).map(b => ({ ...b, earned: earnedSet.has(b.key) })));
-    }
-    load();
-  }, [userId, open]);
-
-  const earned = badges.filter(b => b.earned);
-  const locked = badges.filter(b => !b.earned);
-
-  return (
-    <div>
-      <button onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full justify-center transition-all"
-        style={{ backgroundColor: open ? "rgba(245,166,35,0.1)" : "var(--soma-bg)", border: `1px solid ${open ? "rgba(245,166,35,0.3)" : "var(--soma-border)"}`, color: open ? "#f5a623" : "var(--soma-muted)" }}>
-        <Trophy size={15} /> Conquistas {earned.length > 0 && `(${earned.length})`}
-      </button>
-      {open && (
-        <div className="mt-3 space-y-4 border-t pt-3" style={{ borderColor: "var(--soma-border)" }}>
-          {earned.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-2" style={{ color: "#f5a623" }}>✅ Conquistados ({earned.length})</p>
-              <div className="grid grid-cols-2 gap-2">
-                {earned.map(b => (
-                  <div key={b.key} className="rounded-xl p-3 flex items-start gap-2"
-                    style={{ backgroundColor: "rgba(245,166,35,0.08)", border: "1px solid rgba(245,166,35,0.2)" }}>
-                    <span className="text-xl shrink-0">{b.icon}</span>
-                    <div><p className="font-bold text-xs" style={{ color: "#f5a623" }}>{b.title}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--soma-muted)" }}>{b.description}</p></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {locked.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-2" style={{ color: "var(--soma-muted)" }}>🔒 Por conquistar ({locked.length})</p>
-              <div className="grid grid-cols-2 gap-2">
-                {locked.map(b => (
-                  <div key={b.key} className="rounded-xl p-3 flex items-start gap-2 opacity-40"
-                    style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
-                    <span className="text-xl shrink-0">{b.icon}</span>
-                    <div><p className="font-bold text-xs" style={{ color: "var(--soma-text)" }}>{b.title}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--soma-muted)" }}>{b.description}</p></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
+// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 export default function TrilhaDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { modules, progress, hasCert, loading, completeLesson, totalLessons, doneLessons, pct } = useTrilha(id ?? "");
 
-  const [trilha, setTrilha]             = useState<Trilha | null>(null);
-  const [activeModule, setActiveModule] = useState<string | null>(null);
-  const [activeLesson, setActiveLesson] = useState<string | null>(null);
-  const [certDone, setCertDone]         = useState(false);
-  const [certLoading, setCertLoading]   = useState(false);
+  const [trilha, setTrilha] = useState<Trilha | null>(null);
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [showAI, setShowAI] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [certDone, setCertDone] = useState(false);
+  const [certLoading, setCertLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"conteudo" | "notas" | "comentarios">("conteudo");
 
+  const streak = useStreak(user?.id ?? "");
+
+  // Carrega trilha
   useEffect(() => {
     if (!id) return;
     supabase.from("trilhas").select("*").eq("id", id).single().then(({ data }) => setTrilha(data));
   }, [id]);
 
+  // Define primeira aula automaticamente
   useEffect(() => {
-    if (modules.length > 0 && !activeModule) setActiveModule(modules[0].id);
+    if (modules.length > 0 && !activeLessonId) {
+      const firstLesson = modules[0]?.lessons?.[0];
+      if (firstLesson) setActiveLessonId(firstLesson.id);
+    }
   }, [modules]);
 
-  async function awardBadge(key: string) {
-    if (!user) return;
-    await supabase.from("user_badges").upsert({ user_id: user.id, badge_key: key }, { onConflict: "user_id,badge_key" });
-  }
+  // Encontra aula ativa
+  const activeLesson = modules.flatMap(m => m.lessons).find((l: any) => l.id === activeLessonId);
+  const activeModule = modules.find(m => m.lessons.some((l: any) => l.id === activeLessonId));
 
-  async function handleCompleteLesson(lessonId: string) {
-    await completeLesson(lessonId);
-    await awardBadge("first_lesson");
-    // Verifica se completou um módulo inteiro
-    const mod = modules.find(m => m.lessons.some((l: any) => l.id === lessonId));
-    if (mod) {
-      const allDone = mod.lessons.every((l: any) => l.id === lessonId || progress[l.id]);
-      if (allDone) await awardBadge("first_module");
+  // Aula anterior / próxima
+  const allLessons = modules.flatMap(m => m.lessons as any[]);
+  const currentIndex = allLessons.findIndex(l => l.id === activeLessonId);
+  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+
+  async function handleComplete() {
+    if (!activeLessonId) return;
+    await completeLesson(activeLessonId);
+    // Avança para próxima aula automaticamente
+    if (nextLesson) {
+      setTimeout(() => setActiveLessonId(nextLesson.id), 400);
     }
   }
 
@@ -472,238 +432,285 @@ export default function TrilhaDetail() {
     if (!profile || !id || hasCert || pct < 100) return;
     setCertLoading(true);
     await supabase.from("certificates").insert({ user_id: profile.id, trilha_id: id, issued_at: new Date().toISOString() });
-    await awardBadge("first_trilha");
-    if (trilha?.level === 1) await awardBadge("junior_cs");
-    if (trilha?.level === 2) await awardBadge("pleno_cs");
-    if (trilha?.level === 3) await awardBadge("senior_cs");
-    if (trilha?.level === 4) await awardBadge("gestor_cs");
     setCertDone(true);
     setCertLoading(false);
   }
 
   if (loading || !trilha) return (
     <div className="flex items-center justify-center py-20">
-      <span className="animate-pulse" style={{ color: "#f5a623" }}>Carregando trilha...</span>
+      <span className="animate-pulse text-sm" style={{ color: "#f5a623" }}>Carregando trilha...</span>
     </div>
   );
 
-  const colors = levelColors[trilha.level] ?? levelColors[1];
+  const lvColor = levelColor[trilha.level] ?? "#f5a623";
+  const isDone = activeLessonId ? !!progress[activeLessonId] : false;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden relative" style={{ backgroundColor: "var(--soma-bg)" }}>
 
-      {/* Topo */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <button onClick={() => navigate("/trilhas")}
-          className="flex items-center gap-2 text-sm hover:opacity-70 transition-opacity"
-          style={{ color: "var(--soma-muted)" }}>
-          <ChevronLeft size={16} /> Voltar para Trilhas
-        </button>
-        {user && <StreakBadge userId={user.id} />}
-      </div>
+      {/* ── SIDEBAR DE MÓDULOS ─────────────────────────────────────────── */}
+      {/* Overlay mobile */}
+      {showSidebar && (
+        <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setShowSidebar(false)} />
+      )}
 
-      {/* Header da trilha */}
-      <div className="rounded-2xl border p-6 space-y-5" style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs px-2.5 py-1 rounded-full font-bold border"
-                style={{ backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }}>
-                {levelLabel[trilha.level]}
+      <aside className={`
+        fixed lg:relative z-40 lg:z-auto top-0 left-0 h-full
+        flex flex-col shrink-0 transition-transform duration-300
+        ${showSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+      `} style={{ width: 272, backgroundColor: "var(--soma-card)", borderRight: "1px solid var(--soma-border)" }}>
+
+        {/* Header sidebar */}
+        <div className="p-4 shrink-0" style={{ borderBottom: "1px solid var(--soma-border)" }}>
+          <button onClick={() => navigate("/trilhas")}
+            className="flex items-center gap-1.5 text-xs mb-4 hover:opacity-70 transition-opacity"
+            style={{ color: "var(--soma-muted)" }}>
+            <ChevronLeft size={14} /> Todas as trilhas
+          </button>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+              style={{ backgroundColor: `${lvColor}20`, color: lvColor, border: `1px solid ${lvColor}40` }}>
+              {levelLabel[trilha.level]}
+            </span>
+            {streak > 0 && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: "#f5a623" }}>
+                <Flame size={12} /> {streak}d
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-full uppercase font-medium"
-                style={{ backgroundColor: "var(--soma-bg)", color: "var(--soma-muted)", border: "1px solid var(--soma-border)" }}>
-                {trilha.sector}
-              </span>
-            </div>
-            <h1 className="text-xl font-bold" style={{ color: "var(--soma-text)" }}>{trilha.title}</h1>
-            <p className="text-sm" style={{ color: "var(--soma-muted)" }}>{trilha.description}</p>
+            )}
           </div>
-          <div className="flex gap-5 shrink-0">
-            {[{ label: "aulas", val: totalLessons }, { label: "concluídas", val: doneLessons }, { label: "progresso", val: `${pct}%` }].map(({ label, val }) => (
-              <div key={label} className="text-center">
-                <p className="font-bold text-2xl" style={{ color: "#f5a623" }}>{val}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--soma-muted)" }}>{label}</p>
-              </div>
-            ))}
+          <p className="font-bold text-sm leading-snug mb-3" style={{ color: "var(--soma-text)" }}>{trilha.title}</p>
+          {/* Progress */}
+          <div className="space-y-1">
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--soma-bg)" }}>
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#22c55e" : "#f5a623" }} />
+            </div>
+            <div className="flex justify-between text-xs" style={{ color: "var(--soma-muted)" }}>
+              <span>{doneLessons} de {totalLessons} aulas</span>
+              <span style={{ color: pct === 100 ? "#22c55e" : "#f5a623" }}>{pct}%</span>
+            </div>
           </div>
         </div>
 
-        {/* Barra de progresso */}
-        <div className="space-y-1.5">
-          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "var(--soma-bg)" }}>
-            <div className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#22c55e" : "#f5a623" }} />
-          </div>
-          <div className="flex justify-between text-xs" style={{ color: "var(--soma-muted)" }}>
-            <span>{doneLessons} de {totalLessons} aulas concluídas</span>
-            <span style={{ color: pct === 100 ? "#22c55e" : "#f5a623", fontWeight: 600 }}>{pct}%</span>
-          </div>
+        {/* Lista de módulos */}
+        <div className="flex-1 overflow-y-auto py-2">
+          {modules.map((mod, modIdx) => {
+            const modDone = mod.lessons.filter((l: any) => progress[l.id]).length;
+            const modTotal = mod.lessons.length;
+            return (
+              <div key={mod.id}>
+                {/* Título módulo */}
+                <div className="px-4 py-2 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--soma-muted)" }}>
+                    {modIdx + 1}. {mod.title}
+                  </p>
+                  <span className="text-xs" style={{ color: "var(--soma-muted)" }}>{modDone}/{modTotal}</span>
+                </div>
+                {/* Aulas */}
+                {mod.lessons.map((lesson: any) => {
+                  const isActive = lesson.id === activeLessonId;
+                  const isDoneL = !!progress[lesson.id];
+                  return (
+                    <button key={lesson.id}
+                      onClick={() => { setActiveLessonId(lesson.id); setShowSidebar(false); setActiveTab("conteudo"); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:opacity-80"
+                      style={{ backgroundColor: isActive ? "rgba(245,166,35,0.08)" : "transparent", borderRight: isActive ? `2px solid ${lvColor}` : "2px solid transparent" }}>
+                      {/* Ícone status */}
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: isDoneL ? "#22c55e" : isActive ? lvColor : "var(--soma-bg)" }}>
+                        {isDoneL
+                          ? <CheckCircle2 size={11} color="#000" />
+                          : isActive
+                            ? <Play size={9} color="#000" style={{ marginLeft: 1 }} />
+                            : <Play size={9} style={{ color: "var(--soma-muted)", marginLeft: 1 }} />
+                        }
+                      </span>
+                      <span className="flex-1 min-w-0 text-xs leading-snug truncate"
+                        style={{ color: isDoneL ? "var(--soma-muted)" : isActive ? lvColor : "var(--soma-text)", textDecoration: isDoneL ? "line-through" : "none" }}>
+                        {lesson.title}
+                      </span>
+                      {lesson.duration_min > 0 && (
+                        <span className="text-xs shrink-0" style={{ color: "var(--soma-muted)" }}>{lesson.duration_min}m</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
 
         {/* Certificado */}
-        {pct === 100 && !hasCert && !certDone && (
-          <button onClick={handleCertificate} disabled={certLoading}
-            className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
-            style={{ backgroundColor: "#f5a623", color: "#000" }}>
-            <Trophy size={18} /> {certLoading ? "Gerando certificado..." : "🎉 Emitir Certificado de Conclusão"}
-          </button>
-        )}
-        {(hasCert || certDone) && (
-          <div className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
-            style={{ backgroundColor: "rgba(22,163,74,0.15)", border: "1px solid rgba(22,163,74,0.3)", color: "#4ade80" }}>
-            <Trophy size={18} /> 🏆 Certificado emitido! Parabéns pela conquista!
-          </div>
-        )}
-      </div>
-
-      {/* Módulos */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--soma-muted)" }}>
-          Conteúdo da trilha — {modules.length} módulos
-        </h2>
-
-        {modules.length === 0 && (
-          <div className="rounded-2xl border p-10 text-center" style={{ backgroundColor: "var(--soma-card)", borderColor: "var(--soma-border)" }}>
-            <Star size={32} className="mx-auto mb-3 opacity-20" />
-            <p className="text-sm" style={{ color: "var(--soma-muted)" }}>Conteúdo em preparação. Em breve!</p>
-          </div>
-        )}
-
-        {modules.map((mod, modIdx) => {
-          const modDone  = mod.lessons.filter((l: any) => progress[l.id]).length;
-          const modTotal = mod.lessons.length;
-          const modPct   = modTotal > 0 ? Math.round((modDone / modTotal) * 100) : 0;
-          const isOpen   = activeModule === mod.id;
-
-          return (
-            <div key={mod.id} className="rounded-2xl border overflow-hidden transition-all"
-              style={{ backgroundColor: "var(--soma-card)", borderColor: isOpen ? "#f5a623" : "var(--soma-border)" }}>
-
-              {/* Header módulo */}
-              <button className="w-full flex items-center gap-4 px-5 py-4 text-left"
-                onClick={() => setActiveModule(isOpen ? null : mod.id)}>
-                <span className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-                  style={{ backgroundColor: modPct === 100 ? "#22c55e" : isOpen ? "#f5a623" : "var(--soma-bg)", color: (modPct === 100 || isOpen) ? "#000" : "var(--soma-muted)" }}>
-                  {modPct === 100 ? <CheckCircle2 size={16} /> : modIdx + 1}
-                </span>
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div>
-                    <p className="font-semibold text-sm" style={{ color: "var(--soma-text)" }}>{mod.title}</p>
-                    <p className="text-xs" style={{ color: "var(--soma-muted)" }}>{mod.description}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--soma-bg)" }}>
-                      <div className="h-full rounded-full transition-all"
-                        style={{ width: `${modPct}%`, backgroundColor: modPct === 100 ? "#22c55e" : "#f5a623" }} />
-                    </div>
-                    <span className="text-xs shrink-0" style={{ color: "var(--soma-muted)" }}>{modDone}/{modTotal} aulas</span>
-                  </div>
-                </div>
-                <ChevronDown size={16} className={`transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} style={{ color: "var(--soma-muted)" }} />
+        {pct === 100 && (
+          <div className="p-4 shrink-0" style={{ borderTop: "1px solid var(--soma-border)" }}>
+            {hasCert || certDone ? (
+              <div className="flex items-center gap-2 text-xs p-3 rounded-xl" style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "#4ade80" }}>
+                <Trophy size={14} /> Certificado emitido! 🎉
+              </div>
+            ) : (
+              <button onClick={handleCertificate} disabled={certLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: "#f5a623", color: "#000" }}>
+                <Trophy size={14} /> {certLoading ? "Gerando..." : "Emitir Certificado"}
               </button>
+            )}
+          </div>
+        )}
+      </aside>
 
-              {/* Lista de aulas */}
-              {isOpen && (
-                <div className="border-t" style={{ borderColor: "rgba(245,166,35,0.15)" }}>
-                  {mod.lessons.map((lesson: any, lessonIdx: number) => {
-                    const isDone       = !!progress[lesson.id];
-                    const isLessonOpen = activeLesson === lesson.id;
+      {/* ── ÁREA PRINCIPAL ─────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-                    return (
-                      <div key={lesson.id} className="border-b last:border-0" style={{ borderColor: "var(--soma-border)" }}>
-                        {/* Header aula */}
-                        <button className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors"
-                          style={{ backgroundColor: isLessonOpen ? "rgba(245,166,35,0.03)" : "transparent" }}
-                          onClick={() => setActiveLesson(isLessonOpen ? null : lesson.id)}>
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: isDone ? "#22c55e" : "var(--soma-bg)", border: `1px solid ${isDone ? "#22c55e" : "var(--soma-border)"}` }}>
-                            {isDone ? <CheckCircle2 size={12} color="#000" /> : <Play size={9} style={{ color: "var(--soma-muted)", marginLeft: 1 }} />}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium"
-                              style={{ color: isDone ? "var(--soma-muted)" : "var(--soma-text)", textDecoration: isDone ? "line-through" : "none" }}>
-                              {lessonIdx + 1}. {lesson.title}
-                            </p>
-                            {lesson.description && !isLessonOpen && (
-                              <p className="text-xs truncate mt-0.5" style={{ color: "var(--soma-muted)" }}>{lesson.description}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {lesson.duration_min > 0 && (
-                              <span className="flex items-center gap-1 text-xs" style={{ color: "var(--soma-muted)" }}>
-                                <Clock size={11} /> {lesson.duration_min}min
-                              </span>
-                            )}
-                            <ChevronDown size={14} className={`transition-transform ${isLessonOpen ? "rotate-180" : ""}`} style={{ color: "var(--soma-muted)" }} />
-                          </div>
-                        </button>
+        {/* Topbar mobile */}
+        <div className="flex items-center gap-3 px-4 py-3 lg:hidden shrink-0"
+          style={{ backgroundColor: "var(--soma-card)", borderBottom: "1px solid var(--soma-border)" }}>
+          <button onClick={() => setShowSidebar(true)} style={{ color: "var(--soma-muted)" }}>
+            <Menu size={20} />
+          </button>
+          <p className="flex-1 text-sm font-medium truncate" style={{ color: "var(--soma-text)" }}>{activeLesson?.title ?? trilha.title}</p>
+        </div>
 
-                        {/* Conteúdo da aula */}
-                        {isLessonOpen && (
-                          <div className="px-5 pb-6 pt-4 space-y-5 border-t" style={{ borderColor: "rgba(245,166,35,0.1)" }}>
+        {/* Área scrollável */}
+        <div className="flex-1 overflow-y-auto">
 
-                            {/* Vídeo */}
-                            {lesson.video_url && (() => {
-                              const ytId = lesson.video_url.match(/(?:v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-                              const embed = ytId ? `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1` : lesson.video_url;
-                              return (
-                                <div className="rounded-xl overflow-hidden shadow-lg" style={{ aspectRatio: "16/9", backgroundColor: "#000" }}>
-                                  <iframe src={embed} className="w-full h-full" allowFullScreen
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
-                                </div>
-                              );
-                            })()}
-
-                            {/* Material de leitura */}
-                            {lesson.content && (
-                              <div className="rounded-xl p-5" style={{ backgroundColor: "var(--soma-bg)", border: "1px solid var(--soma-border)" }}>
-                                <p className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#f5a623" }}>
-                                  <BookOpen size={13} /> Material de leitura
-                                </p>
-                                <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: "var(--soma-muted)" }}>
-                                  {lesson.content}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Ferramentas interativas */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <AcademyAI lessonTitle={lesson.title} lessonContent={lesson.content ?? ""} trilhaTitle={trilha.title} />
-                              <LessonNotes lessonId={lesson.id} />
-                              <LessonComments lessonId={lesson.id} />
-                              <Glossary sector={trilha.sector} />
-                            </div>
-
-                            {/* Badges do usuário */}
-                            {user && (
-                              <BadgesPanel userId={user.id} />
-                            )}
-
-                            {/* Botão concluir */}
-                            {!isDone ? (
-                              <button onClick={() => handleCompleteLesson(lesson.id)}
-                                className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                                style={{ backgroundColor: "#f5a623", color: "#000" }}>
-                                <CheckCircle2 size={16} /> Marcar aula como concluída
-                              </button>
-                            ) : (
-                              <div className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-                                style={{ backgroundColor: "rgba(22,163,74,0.15)", border: "1px solid rgba(22,163,74,0.3)", color: "#4ade80" }}>
-                                <CheckCircle2 size={16} /> Aula concluída! ✨
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+          {/* ── PLAYER ───────────────────────────────────────────────── */}
+          <div style={{ backgroundColor: "#0a0a0e" }}>
+            {activeLesson?.video_url ? (
+              <VideoPlayer url={activeLesson.video_url} />
+            ) : (
+              <div className="flex items-center justify-center" style={{ aspectRatio: "16/7" }}>
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+                    style={{ backgroundColor: "transparent" }}>
+                    <BookOpen size={28} style={{ color: "var(--soma-muted)" }} />
+                  </div>
+                  <p className="text-sm" style={{ color: "var(--soma-muted)" }}>Aula em formato de leitura</p>
                 </div>
+              </div>
+            )}
+
+            {/* Navegação de aulas */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <button onClick={() => prevLesson && setActiveLessonId(prevLesson.id)} disabled={!prevLesson}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 transition-all hover:opacity-70"
+                style={{ color: "var(--soma-muted)", border: "1px solid var(--soma-border)" }}>
+                <SkipBack size={12} /> Anterior
+              </button>
+              <div className="flex-1 text-center">
+                <p className="text-xs font-medium truncate" style={{ color: "var(--soma-text)" }}>{activeLesson?.title}</p>
+                <p className="text-xs" style={{ color: "var(--soma-muted)" }}>
+                  {activeModule?.title} · {activeLesson?.duration_min ? `${activeLesson.duration_min} min` : ""}
+                </p>
+              </div>
+              <button onClick={() => nextLesson && setActiveLessonId(nextLesson.id)} disabled={!nextLesson}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 transition-all hover:opacity-70"
+                style={{ color: "var(--soma-muted)", border: "1px solid var(--soma-border)" }}>
+                Próxima <SkipForward size={12} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── CONTEÚDO CLARO ───────────────────────────────────────── */}
+          <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 space-y-8">
+
+            {/* Header da aula */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ backgroundColor: `${lvColor}15`, color: lvColor, border: `1px solid ${lvColor}30` }}>
+                  {levelLabel[trilha.level]}
+                </span>
+                <span className="text-xs" style={{ color: "var(--soma-muted)" }}>{activeModule?.title}</span>
+              </div>
+              <h1 className="text-2xl font-bold" style={{ color: "var(--soma-text)" }}>{activeLesson?.title}</h1>
+              {activeLesson?.description && (
+                <p className="text-base" style={{ color: "var(--soma-muted)" }}>{activeLesson.description}</p>
+              )}
+              <div className="flex items-center gap-4 flex-wrap">
+                {activeLesson?.duration_min > 0 && (
+                  <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--soma-muted)" }}>
+                    <Clock size={14} /> {activeLesson.duration_min} min
+                  </span>
+                )}
+                {isDone && (
+                  <span className="flex items-center gap-1.5 text-sm" style={{ color: "#22c55e" }}>
+                    <CheckCircle2 size={14} /> Concluída
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b" style={{ borderColor: "var(--soma-border)" }}>
+              {[
+                { id: "conteudo", label: "Conteúdo", icon: BookOpen },
+                { id: "notas", label: "Anotações", icon: PenLine },
+                { id: "comentarios", label: "Comentários", icon: MessageCircle },
+              ].map(({ id: tabId, label, icon: Icon }) => (
+                <button key={tabId} onClick={() => setActiveTab(tabId as any)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all"
+                  style={{
+                    borderBottomColor: activeTab === tabId ? "#f5a623" : "transparent",
+                    color: activeTab === tabId ? "#f5a623" : "var(--soma-muted)",
+                  }}>
+                  <Icon size={15} /> {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Conteúdo da aba */}
+            <div>
+              {activeTab === "conteudo" && activeLesson?.content && (
+                <LessonContent content={activeLesson.content} />
+              )}
+              {activeTab === "notas" && activeLessonId && (
+                <Notes lessonId={activeLessonId} />
+              )}
+              {activeTab === "comentarios" && activeLessonId && (
+                <Comments lessonId={activeLessonId} />
               )}
             </div>
-          );
-        })}
-      </div>
+
+            {/* Ações */}
+            <div className="flex items-center gap-3 pt-4" style={{ borderTop: "1px solid var(--soma-border)" }}>
+              {!isDone ? (
+                <button onClick={handleComplete}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
+                  style={{ backgroundColor: "#f5a623", color: "#000" }}>
+                  <CheckCircle2 size={16} /> Marcar como concluída
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
+                  style={{ backgroundColor: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "#22c55e" }}>
+                  <CheckCircle2 size={16} /> Aula concluída ✨
+                </div>
+              )}
+              <button onClick={() => setShowAI(true)}
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80"
+                style={{ backgroundColor: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", color: "#d8b4fe" }}>
+                <Bot size={16} /> Perguntar para IA
+              </button>
+              {nextLesson && (
+                <button onClick={() => setActiveLessonId(nextLesson.id)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm transition-all hover:opacity-80 ml-auto"
+                  style={{ border: "1px solid var(--soma-border)", color: "var(--soma-muted)" }}>
+                  Próxima aula <ChevronRight size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* ── IA MODAL ───────────────────────────────────────────────────── */}
+      {showAI && activeLesson && (
+        <AIModal
+          lessonTitle={activeLesson.title}
+          lessonContent={activeLesson.content ?? ""}
+          trilhaTitle={trilha.title}
+          onClose={() => setShowAI(false)}
+        />
+      )}
     </div>
   );
 }

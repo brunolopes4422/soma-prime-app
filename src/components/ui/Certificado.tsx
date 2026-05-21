@@ -12,7 +12,7 @@ interface CertificadoProps {
   onClose: () => void;
 }
 
-export default function Certificado({ colaborador, trilha, sector, nivel, empresa, dataEmissao, nota, onClose }: CertificadoProps) {
+export default function Certificado({ colaborador, trilha, sector, nivel, dataEmissao, nota, onClose }: CertificadoProps) {
   const certRef = useRef<HTMLDivElement>(null);
 
   async function handleDownload() {

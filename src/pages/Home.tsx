@@ -6,8 +6,8 @@ import type { CompanyKey } from "../styles/themes";
 import { supabase } from "../lib/supabase";
 import {
   Trophy, BookOpen, Flame, ChevronRight, Play,
-  CheckCircle2, Lock, Star, ArrowRight, LayoutDashboard,
-  Zap, Target
+  Star, ArrowRight, LayoutDashboard,
+  Target
 } from "lucide-react";
 
 interface Trilha {

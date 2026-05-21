@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Users, Building2, Layers, BookOpen, ArrowLeft, Settings } from "lucide-react";
+import { Users, Building2, Layers, BookOpen, ArrowLeft, Settings, GraduationCap } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Sun, Moon } from "lucide-react";
@@ -9,6 +9,7 @@ const navLinks = [
   { to: "/admin/empresas",  label: "Empresas",  icon: Building2 },
   { to: "/admin/setores",   label: "Setores",   icon: Layers },
   { to: "/admin/guias",     label: "Guias",     icon: BookOpen },
+  { to: "/admin/trilhas",   label: "Trilhas",   icon: GraduationCap },
 ];
 
 export default function AdminLayout() {

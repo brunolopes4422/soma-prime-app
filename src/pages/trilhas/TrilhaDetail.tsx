@@ -6,8 +6,8 @@ import { useTrilha } from "../../hooks/useTrilha";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Play, Trophy,
   Clock, MessageCircle, Send, Bot, X, Flame, Menu,
-  BookOpen, PenLine, Lock, SkipBack, SkipForward,
-  Maximize2, Pause, Star, AlertTriangle
+  BookOpen, PenLine, SkipBack, SkipForward,
+  AlertTriangle
 } from "lucide-react";
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
@@ -599,7 +599,7 @@ export default function TrilhaDetail() {
               <div className="flex-1 text-center">
                 <p className="text-xs font-medium truncate" style={{ color: "var(--soma-text)" }}>{activeLesson?.title}</p>
                 <p className="text-xs" style={{ color: "var(--soma-muted)" }}>
-                  {activeModule?.title} · {activeLesson?.duration_min ? `${activeLesson.duration_min} min` : ""}
+                  {activeModule?.title} · {activeLesson?.duration_min ? `${activeLesson.duration_min} min` : ''}
                 </p>
               </div>
               <button onClick={() => nextLesson && setActiveLessonId(nextLesson.id)} disabled={!nextLesson}
@@ -627,7 +627,7 @@ export default function TrilhaDetail() {
                 <p className="text-base" style={{ color: "var(--soma-muted)" }}>{activeLesson.description}</p>
               )}
               <div className="flex items-center gap-4 flex-wrap">
-                {activeLesson?.duration_min > 0 && (
+                {(activeLesson?.duration_min ?? 0) > 0 && (
                   <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--soma-muted)" }}>
                     <Clock size={14} /> {activeLesson.duration_min} min
                   </span>

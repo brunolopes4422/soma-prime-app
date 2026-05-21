@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Users, FileText, Calculator, Briefcase, LayoutDashboard, Home, BookOpen, Settings, BookMarked, Monitor, X, ChevronRight } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";

@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X,
-  BookOpen, Video, FileText, HelpCircle, Image,
+  BookOpen, Video, FileText, HelpCircle,
   GripVertical, Check, AlertTriangle, Pencil
 } from "lucide-react";
 

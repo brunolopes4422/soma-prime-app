@@ -629,7 +629,7 @@ export default function TrilhaDetail() {
               <div className="flex items-center gap-4 flex-wrap">
                 {(activeLesson?.duration_min ?? 0) > 0 && (
                   <span className="flex items-center gap-1.5 text-sm" style={{ color: "var(--soma-muted)" }}>
-                    <Clock size={14} /> {activeLesson.duration_min} min
+                    <Clock size={14} /> {activeLesson?.duration_min} min
                   </span>
                 )}
                 {isDone && (

@@ -2,6 +2,17 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 
+interface QuizOption {
+  id: string;
+  text: string;
+  correct?: boolean;
+}
+
+interface QuizQuestion {
+  question: string;
+  options: QuizOption[];
+}
+
 interface Lesson {
   id: string;
   module_id: string;
@@ -12,8 +23,9 @@ interface Lesson {
   duration_min: number;
   content: string | null;
   order_num: number;
-}
 
+  quiz_data?: QuizQuestion[] | null;
+}
 interface Module {
   id: string;
   trilha_id: string;
@@ -22,6 +34,8 @@ interface Module {
   order_num: number;
   lessons: Lesson[];
 }
+
+
 
 export function useTrilha(trilhaId: string) {
   const { user } = useAuth();

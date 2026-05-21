@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
-import { Users, CheckCircle2, Trophy, AlertCircle} from "lucide-react";
+import { Users, CheckCircle2, Trophy, AlertCircle } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -33,10 +33,10 @@ const CHECKLIST_TOTALS: Record<string, number> = {
 
 export default function Dashboard() {
   const { profile } = useAuth();
-  const [team, setTeam]               = useState<TeamMember[]>([]);
-  const [checklists, setChecklists]   = useState<ChecklistSummary[]>([]);
-  const [quizzes, setQuizzes]         = useState<QuizSummary[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [checklists, setChecklists] = useState<ChecklistSummary[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!profile) return;
@@ -173,8 +173,13 @@ export default function Dashboard() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--soma-bg)" }}>
-                            <div className="h-full rounded-full transition-all" style={{ backgroundColor: "#f5a623" }} style={{ width: `${pct}%` }} />
-                          </div>
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                backgroundColor: "#f5a623",
+                                width: `${pct}%`
+                              }}
+                            />                          </div>
                           <span className="text-xs opacity-60">{pct}%</span>
                         </div>
                       </td>

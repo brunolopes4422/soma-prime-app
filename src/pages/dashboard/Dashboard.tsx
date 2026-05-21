@@ -110,10 +110,10 @@ export default function Dashboard() {
       {/* Cards de métricas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Colaboradores", value: totalMembers, icon: Users, color: "#60a5fa", bg: "rgba(96,165,250,0.1)", border: "rgba(96,165,250,0.25)" },
-          { label: "Onboarding completo", value: onboardingDone, icon: CheckCircle2, color: "#22c55e", bg: "rgba(34,197,94,0.1)", border: "rgba(34,197,94,0.25)" },
-          { label: "Média nos quizzes", value: `${avgQuizScore}%`, icon: Trophy, color: "#f5a623", bg: "rgba(245,166,35,0.1)", border: "rgba(245,166,35,0.2)" },
-          { label: "Sem progresso", value: atRisk, icon: AlertCircle, color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+          { label: "Colaboradores", value: totalMembers, icon: Users, color: "#60a5fa", border: "rgba(96,165,250,0.25)" },
+          { label: "Onboarding completo", value: onboardingDone, icon: CheckCircle2, color: "#22c55e", border: "rgba(34,197,94,0.25)" },
+          { label: "Média nos quizzes", value: `${avgQuizScore}%`, icon: Trophy, color: "#f5a623", border: "rgba(245,166,35,0.2)" },
+          { label: "Sem progresso", value: atRisk, icon: AlertCircle, color: "#f87171", border: "rgba(248,113,113,0.25)" },
         ].map(({ label, value, icon: Icon, color, bg, border }) => (
           <div key={label} className="rounded-2xl p-5"
             style={{ backgroundColor: "var(--soma-card)", border: `1px solid ${border}` }}>

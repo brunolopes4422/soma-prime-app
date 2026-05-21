@@ -416,7 +416,7 @@ function QuizBlock({ lesson, trilhaId, userId }: { lesson: any; trilhaId: string
         if (!data || data.length === 0) return;
 
         // Normaliza tentativa — registros antigos podem ter null
-        const normalized = data.map((r: any, i: number) => ({
+        const normalized = data.map((r: any) => ({
           ...r,
           tentativa: r.tentativa ?? 1,
         }));
@@ -689,7 +689,7 @@ export default function TrilhaDetail() {
   useEffect(() => {
     if (!profile || !id || !modules.length) return;
     const allLessons = modules.flatMap(m => m.lessons as any[]);
-    const avFinal = allLessons.find((l: any) => l.title?.toLowerCase().includes("avaliação final"));
+    const avFinal = (allLessons as any[]).find((l: any) => l.title?.toLowerCase().includes("avaliação final"));
     if (!avFinal) return;
     supabase.from("trilha_quiz_results")
       .select("correct, tentativa, created_at")

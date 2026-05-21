@@ -6,7 +6,7 @@ interface CertificadoProps {
   trilha: string;
   sector: string;
   nivel: string;
-  empresa: string;
+  empresa?: string;
   dataEmissao: string;
   nota?: number;
   onClose: () => void;
@@ -62,15 +62,15 @@ export default function Certificado({ colaborador, trilha, sector, nivel, empres
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 150mm; height: 150mm;
+      width: 185mm; height: 185mm;
       object-fit: contain;
-      opacity: 0.20;
+      opacity: 0.15;
       pointer-events: none;
     }
     .logo-topo { display: flex; flex-direction: column; align-items: center; margin-bottom: 6mm; }
-    .logo-s-img { height: 40mm; width: 40mm; object-fit: contain; margin-bottom: 3mm; }
-    .logo-nome { font-size: 20pt; letter-spacing: 6px; color: #f5a623; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 1mm; }
-    .subtitulo { font-size: 14pt; letter-spacing: 3px; color: #999; font-family: Arial, sans-serif; margin-bottom: 8mm; text-transform: uppercase; }
+    .logo-s-img { height: 22mm; width: 22mm; object-fit: contain; margin-bottom: 3mm; }
+    .logo-nome { font-size: 14pt; letter-spacing: 6px; color: #f5a623; font-weight: bold; font-family: Arial, sans-serif; margin-bottom: 1mm; }
+    .subtitulo { font-size: 7pt; letter-spacing: 3px; color: #999; font-family: Arial, sans-serif; margin-bottom: 8mm; text-transform: uppercase; }
     .certifica { font-size: 9pt; letter-spacing: 2px; color: #888; font-family: Arial, sans-serif; margin-bottom: 3mm; text-transform: uppercase; }
     .nome { font-size: 30pt; color: #1a1a1a; margin-bottom: 5mm; font-style: italic; }
     .descricao { font-size: 9pt; color: #666; font-family: Arial, sans-serif; text-align: center; max-width: 180mm; line-height: 1.6; margin-bottom: 5mm; }
@@ -138,8 +138,8 @@ export default function Certificado({ colaborador, trilha, sector, nivel, empres
     printWindow.document.close();
   }
 
-  const levelColor: Record<string, string> = { Júnior: "#22c55e", Pleno: "#60a5fa", Sênior: "#a855f7", Gestor: "#f5a623" };
-  const lc = levelColor[nivel] ?? "#f5a623";
+  // const levelColor: Record<string, string> = { Júnior: "#22c55e", Pleno: "#60a5fa", Sênior: "#a855f7", Gestor: "#f5a623" };
+  // const lc = levelColor[nivel] ?? "#f5a623";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"

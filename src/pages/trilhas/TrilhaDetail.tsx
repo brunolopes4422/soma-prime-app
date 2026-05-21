@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTrilha } from "../../hooks/useTrilha";
-import Certificado from "../../components/ui/Certificado";
+import Certificado from "../../components/ui/Certificado.tsx";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Play, Trophy,
   Clock, MessageCircle, Send, Bot, X, Flame, Menu,

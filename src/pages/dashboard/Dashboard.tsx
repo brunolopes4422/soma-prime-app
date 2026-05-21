@@ -114,7 +114,7 @@ export default function Dashboard() {
           { label: "Onboarding completo", value: onboardingDone, icon: CheckCircle2, color: "#22c55e", border: "rgba(34,197,94,0.25)" },
           { label: "Média nos quizzes", value: `${avgQuizScore}%`, icon: Trophy, color: "#f5a623", border: "rgba(245,166,35,0.2)" },
           { label: "Sem progresso", value: atRisk, icon: AlertCircle, color: "#f87171", border: "rgba(248,113,113,0.25)" },
-        ].map(({ label, value, icon: Icon, color, bg, border }) => (
+        ].map(({ label, value, icon: Icon, color, border }) => (
           <div key={label} className="rounded-2xl p-5"
             style={{ backgroundColor: "var(--soma-card)", border: `1px solid ${border}` }}>
             <div className="mb-3"><Icon size={20} style={{ color }} /></div>

@@ -19,6 +19,7 @@ import SetPassword from "./pages/SetPassword";
 import Profile from "./pages/Profile";
 import AdminGuides from "./pages/admin/AdminGuides";
 import AdminTrilhas from "./pages/admin/AdminTrilhas";
+import AdminImport from "./pages/admin/AdminImport";
 import GuideContabil from "./pages/guides/GuideContabil";
 import GuideInformatica from "./pages/guides/GuideInformatica";
 
@@ -98,6 +99,7 @@ export default function App() {
             <Route path="setores"   element={<AdminSectors />} />
             <Route path="guias"     element={<AdminGuides />} />
             <Route path="trilhas"   element={<AdminTrilhas />} />
+            <Route path="import"    element={<AdminImport />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

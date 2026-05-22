@@ -9,10 +9,11 @@ interface CertificadoProps {
   empresa?: string;
   dataEmissao: string;
   nota?: number;
+  cargaHoraria?: number;
   onClose: () => void;
 }
 
-export default function Certificado({ colaborador, trilha, sector, nivel, dataEmissao, nota, onClose }: CertificadoProps) {
+export default function Certificado({ colaborador, trilha, sector, nivel, empresa, dataEmissao, nota, cargaHoraria, onClose }: CertificadoProps) {
   const certRef = useRef<HTMLDivElement>(null);
 
   async function handleDownload() {
@@ -108,6 +109,7 @@ export default function Certificado({ colaborador, trilha, sector, nivel, dataEm
 
   <div class="trilha-nome">${trilha}</div>
   <div class="nivel">${sector.toUpperCase()} · ${nivel}</div>
+  ${cargaHoraria ? `<div class="nivel" style="margin-bottom:4mm;">Carga horária: ${cargaHoraria} horas</div>` : ""}
 
   ${nota !== undefined ? `<div class="nota-badge">Nota final: ${nota}%</div>` : ""}
 
@@ -197,9 +199,14 @@ export default function Certificado({ colaborador, trilha, sector, nivel, dataEm
             </p>
 
             <p style={{ fontSize: 13, color: "#f5a623", fontWeight: 700, marginBottom: 2 }}>{trilha}</p>
-            <p style={{ fontSize: 7, color: "#888", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+            <p style={{ fontSize: 7, color: "#888", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>
               {sector} · {nivel}
             </p>
+            {cargaHoraria && (
+              <p style={{ fontSize: 6, color: "#bbb", marginBottom: 8 }}>
+                Carga horária: {cargaHoraria} horas
+              </p>
+            )}
 
             {nota !== undefined && (
               <div className="px-3 py-1 rounded-full mb-8" style={{ backgroundColor: "rgba(245,166,35,0.1)", border: "1px solid rgba(245,166,35,0.3)" }}>

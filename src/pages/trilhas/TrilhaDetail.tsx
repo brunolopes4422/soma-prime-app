@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTrilha } from "../../hooks/useTrilha";
-import Certificado from "../../components/ui/Certificado.tsx";
+import Certificado from "../../components/ui/Certificado";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, Play, Trophy,
   Clock, MessageCircle, Send, Bot, X, Flame, Menu,
@@ -673,7 +673,7 @@ export default function TrilhaDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { modules, progress, hasCert, loading, completeLesson, totalLessons, doneLessons, pct } = useTrilha(id ?? "");
+  const { modules, progress, hasCert, loading, completeLesson, totalLessons, doneLessons, pct, cargaHoraria } = useTrilha(id ?? "");
 
   const [trilha, setTrilha] = useState<Trilha | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -1086,6 +1086,7 @@ export default function TrilhaDetail() {
           empresa={profile.company ?? "Soma Prime"}
           dataEmissao={new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
           nota={finalScore ?? undefined}
+          cargaHoraria={cargaHoraria}
           onClose={() => setShowCertModal(false)}
         />
       )}

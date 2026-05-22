@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import {
   X, Check, Pencil, Trash2, UserPlus, Mail,
   Eye, EyeOff, Search, RefreshCw, BookOpen,
@@ -7,12 +8,8 @@ import {
 } from "lucide-react";
 
 interface UserProfile {
-  id: string;
-  full_name: string;
-  company: string;
-  role: string;
-  sector: string | null;
-  email: string;
+  id: string; full_name: string; company: string;
+  role: string; sector: string | null; email: string;
 }
 interface Trilha { id: string; title: string; sector: string; level: number; }
 
@@ -39,7 +36,6 @@ const SECTORS = [
   { key: "bpo",            label: "BPO / Financeiro" },
 ];
 const LEVEL_LABEL: Record<number, string> = { 1:"Júnior", 2:"Pleno", 3:"Sênior", 4:"Gestor" };
-
 const emptyForm = { full_name:"", email:"", password:"", company:"soma_prime", role:"collaborator", sector:"cs" };
 
 const inp: React.CSSProperties = {
@@ -48,18 +44,17 @@ const inp: React.CSSProperties = {
   fontSize:13, width:"100%", outline:"none",
 };
 const lbl: React.CSSProperties = {
-  display:"block", fontSize:11, fontWeight:600,
-  color:"var(--soma-muted)", marginBottom:4,
+  display:"block", fontSize:11, fontWeight:600, color:"var(--soma-muted)", marginBottom:4,
 };
 
-// ─── GERENCIADOR DE TRILHAS ───────────────────────────────────────────────────
 function TrilhaSelector({ userId, company }: { userId: string; company: string }) {
-  const [trilhas, setTrilhas]   = useState<Trilha[]>([]);
-  const [access, setAccess]     = useState<string[]>([]);
-  const [open, setOpen]         = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [saved, setSaved]       = useState(false);
+  const [trilhas, setTrilhas] = useState<Trilha[]>([]);
+  const [access, setAccess]   = useState<string[]>([]);
+  const [open, setOpen]       = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [saved, setSaved]     = useState(false);
   const [loadingT, setLoadingT] = useState(false);
+  const sectorLabel: Record<string,string> = { cs:"CS", fiscal:"Fiscal", dp:"DP", contabil:"Contábil", omie:"OMIE", informatica:"Informática", societario:"Societário" };
 
   useEffect(() => {
     if (!open) return;
@@ -68,9 +63,7 @@ function TrilhaSelector({ userId, company }: { userId: string; company: string }
       supabase.from("trilhas").select("id,title,sector,level").eq("company", company).order("sector").order("level"),
       supabase.from("user_trilha_access").select("trilha_id").eq("user_id", userId),
     ]).then(([{ data: t }, { data: a }]) => {
-      setTrilhas(t ?? []);
-      setAccess((a ?? []).map((x: any) => x.trilha_id));
-      setLoadingT(false);
+      setTrilhas(t ?? []); setAccess((a ?? []).map((x: any) => x.trilha_id)); setLoadingT(false);
     });
   }, [open, userId, company]);
 
@@ -79,27 +72,21 @@ function TrilhaSelector({ userId, company }: { userId: string; company: string }
     await supabase.from("user_trilha_access").delete().eq("user_id", userId);
     if (access.length > 0)
       await supabase.from("user_trilha_access").insert(access.map(trilha_id => ({ user_id: userId, trilha_id })));
-    setSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   }
 
   const grouped = trilhas.reduce((acc, t) => {
-    if (!acc[t.sector]) acc[t.sector] = [];
-    acc[t.sector].push(t); return acc;
+    if (!acc[t.sector]) acc[t.sector] = []; acc[t.sector].push(t); return acc;
   }, {} as Record<string, Trilha[]>);
-
-  const sectorLabel: Record<string,string> = { cs:"CS", fiscal:"Fiscal", dp:"DP", contabil:"Contábil", omie:"OMIE", informatica:"Informática", societario:"Societário" };
 
   return (
     <div>
       <button onClick={() => setOpen(v => !v)}
         className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg mt-1 transition-all hover:opacity-80"
         style={{ backgroundColor:"rgba(74,222,128,0.1)", border:"1px solid rgba(74,222,128,0.2)", color:"#4ade80" }}>
-        <BookOpen size={11} />
-        {access.length}/{trilhas.length} trilhas liberadas
+        <BookOpen size={11} /> {access.length}/{trilhas.length} trilhas liberadas
         {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
       </button>
-
       {open && (
         <div className="mt-2 rounded-xl border overflow-hidden" style={{ backgroundColor:"var(--soma-card)", borderColor:"var(--soma-border)" }}>
           <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:"var(--soma-border)", backgroundColor:"var(--soma-bg)" }}>
@@ -110,8 +97,7 @@ function TrilhaSelector({ userId, company }: { userId: string; company: string }
             </div>
           </div>
           <div className="p-3 space-y-3 max-h-64 overflow-y-auto">
-            {loadingT
-              ? <p className="text-xs text-center py-4 animate-pulse" style={{ color:"var(--soma-muted)" }}>Carregando...</p>
+            {loadingT ? <p className="text-xs text-center py-4 animate-pulse" style={{ color:"var(--soma-muted)" }}>Carregando...</p>
               : Object.entries(grouped).map(([sector, items]) => (
                 <div key={sector}>
                   <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color:"var(--soma-muted)" }}>
@@ -119,7 +105,7 @@ function TrilhaSelector({ userId, company }: { userId: string; company: string }
                   </p>
                   <div className="space-y-1">
                     {items.map(t => (
-                      <label key={t.id} className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all"
+                      <label key={t.id} className="flex items-center gap-3 p-2 rounded-lg cursor-pointer"
                         style={{ backgroundColor: access.includes(t.id) ? "rgba(245,166,35,0.06)" : "transparent", border:`1px solid ${access.includes(t.id) ? "rgba(245,166,35,0.2)" : "transparent"}` }}>
                         <input type="checkbox" checked={access.includes(t.id)}
                           onChange={() => { setAccess(p => p.includes(t.id) ? p.filter(x => x !== t.id) : [...p, t.id]); setSaved(false); }}
@@ -133,7 +119,7 @@ function TrilhaSelector({ userId, company }: { userId: string; company: string }
               ))}
           </div>
           <div className="px-4 py-3 border-t flex items-center justify-between" style={{ borderColor:"var(--soma-border)" }}>
-            <p className="text-xs" style={{ color:"var(--soma-muted)" }}>💡 Admin e Gestores veem todas as trilhas.</p>
+            <p className="text-xs" style={{ color:"var(--soma-muted)" }}>💡 Admin e Gestores veem todas.</p>
             <button onClick={saveAccess} disabled={saving}
               className="flex items-center gap-1.5 text-xs px-4 py-1.5 rounded-lg font-semibold disabled:opacity-50 shrink-0 ml-3"
               style={{ backgroundColor: saved ? "rgba(34,197,94,0.15)" : "#f5a623", color: saved ? "#22c55e" : "#000" }}>
@@ -147,20 +133,19 @@ function TrilhaSelector({ userId, company }: { userId: string; company: string }
   );
 }
 
-// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 export default function AdminUsers() {
-  const [users, setUsers]       = useState<UserProfile[]>([]);
-  const [filtered, setFiltered] = useState<UserProfile[]>([]);
-  const [search, setSearch]     = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [success, setSuccess]   = useState("");
-  const [error, setError]       = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId]     = useState<string | null>(null);
-  const [form, setForm]         = useState(emptyForm);
-  const [showPass, setShowPass] = useState(false);
-  const [sendingReset, setSendingReset]     = useState<string | null>(null);
-  const [expandedUser, setExpandedUser]     = useState<string | null>(null);
+  const [users, setUsers]         = useState<UserProfile[]>([]);
+  const [filtered, setFiltered]   = useState<UserProfile[]>([]);
+  const [search, setSearch]       = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [success, setSuccess]     = useState("");
+  const [error, setError]         = useState("");
+  const [showForm, setShowForm]   = useState(false);
+  const [editId, setEditId]       = useState<string | null>(null);
+  const [form, setForm]           = useState(emptyForm);
+  const [showPass, setShowPass]   = useState(false);
+  const [sendingReset, setSendingReset]           = useState<string | null>(null);
+  const [expandedUser, setExpandedUser]           = useState<string | null>(null);
   const [resettingProgress, setResettingProgress] = useState<string | null>(null);
 
   async function loadUsers() {
@@ -195,29 +180,32 @@ export default function AdminUsers() {
     setLoading(true);
 
     if (!editId) {
-      // CRIAR — usa signUp que funciona corretamente com o auth do Supabase
       if (!form.email.trim()) { setLoading(false); return flash("Preencha o e-mail.", true); }
       if (form.password.length < 6) { setLoading(false); return flash("Senha mínimo 6 caracteres.", true); }
 
-      // Salva sessão atual do admin
-      const { data: { session: adminSession } } = await supabase.auth.getSession();
-
-      const { data, error: authErr } = await supabase.auth.signUp({
+      // Usa supabaseAdmin (service role) — cria usuário sem afetar sessão do admin
+      const { data, error: authErr } = await supabaseAdmin.auth.admin.createUser({
         email: form.email.trim().toLowerCase(),
         password: form.password,
-        options: { data: { full_name: form.full_name.trim() } },
+        email_confirm: true,
+        user_metadata: { full_name: form.full_name.trim() },
       });
 
-      if (authErr || !data.user) {
-        // Restaura sessão do admin se necessário
-        if (adminSession) await supabase.auth.setSession(adminSession);
+      // Ignora erro de e-mail — usuário é criado mesmo assim
+      const userCreated = data?.user;
+      if (!userCreated && authErr && !authErr.message?.includes("email")) {
         setLoading(false);
-        return flash(authErr?.message?.includes("already") ? "E-mail já cadastrado." : authErr?.message ?? "Erro ao criar usuário.", true);
+        return flash(
+          authErr.message?.includes("already") ? "E-mail já cadastrado." : authErr.message ?? "Erro ao criar usuário.",
+          true
+        );
       }
 
-      // Cria/atualiza profile
+      const userId = userCreated?.id;
+      if (!userId) { setLoading(false); return flash("Erro ao criar usuário.", true); }
+
       await supabase.from("profiles").upsert({
-        id: data.user.id,
+        id: userId,
         full_name: form.full_name.trim(),
         email: form.email.trim().toLowerCase(),
         company: form.company,
@@ -225,28 +213,23 @@ export default function AdminUsers() {
         sector: form.sector || null,
       }, { onConflict: "id" });
 
-      // Restaura sessão do admin
-      if (adminSession) await supabase.auth.setSession(adminSession);
-
-      flash(`✅ Usuário ${form.full_name} criado! Ele já pode fazer login com a senha informada.`);
+      flash(`✅ Usuário ${form.full_name} criado! Pode fazer login com a senha informada.`);
 
     } else {
-      // EDITAR
       await supabase.from("profiles").update({
         full_name: form.full_name.trim(),
-        email: form.email.trim().toLowerCase(),
         company: form.company,
         role: form.role,
         sector: form.sector || null,
       }).eq("id", editId);
       flash("✅ Usuário atualizado!");
     }
-
     closeForm(); loadUsers(); setLoading(false);
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Remover "${name}"? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Remover "${name}"? Não pode ser desfeito.`)) return;
+    await supabaseAdmin.auth.admin.deleteUser(id);
     await supabase.from("profiles").delete().eq("id", id);
     if (expandedUser === id) setExpandedUser(null);
     flash(`Usuário ${name} removido.`);
@@ -254,18 +237,18 @@ export default function AdminUsers() {
   }
 
   async function handleResetPassword(email: string, name: string) {
-    if (!email) return flash("Sem e-mail cadastrado. Edite o usuário primeiro.", true);
+    if (!email) return flash("Sem e-mail cadastrado.", true);
     setSendingReset(email);
     const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/set-password`,
     });
     setSendingReset(null);
     if (err) flash("Erro: " + err.message, true);
-    else flash(`📧 Link de recuperação enviado para ${name} (${email})`);
+    else flash(`📧 Link enviado para ${name} (${email})`);
   }
 
   async function handleResetProgress(userId: string, name: string) {
-    if (!confirm(`Resetar TODO o progresso de "${name}"?\n\n• Apaga aulas concluídas\n• Apaga quizzes e avaliações finais\n• Revoga certificados\n\nEsta ação NÃO pode ser desfeita!`)) return;
+    if (!confirm(`Resetar TODO o progresso de "${name}"?\n\n• Aulas concluídas\n• Quizzes e avaliações\n• Certificados\n\nNão pode ser desfeito!`)) return;
     setResettingProgress(userId);
     await supabase.from("lesson_progress").delete().eq("user_id", userId);
     await supabase.from("trilha_quiz_results").delete().eq("user_id", userId);
@@ -274,18 +257,16 @@ export default function AdminUsers() {
     flash(`✅ Progresso de ${name} resetado!`);
   }
 
-  const roleLabel = (r: string) => ROLES.find(x => x.key === r)?.label ?? r;
-  const sectorLabel = (s: string | null) => SECTORS.find(x => x.key === s)?.label ?? s ?? "—";
+  const roleLabel    = (r: string) => ROLES.find(x => x.key === r)?.label ?? r;
+  const sectorLabel  = (s: string | null) => SECTORS.find(x => x.key === s)?.label ?? s ?? "—";
   const companyLabel = (c: string) => COMPANIES.find(x => x.key === c)?.label ?? c;
-  const roleColor = (r: string) =>
+  const roleColor    = (r: string) =>
     r === "admin"   ? { bg:"rgba(168,85,247,0.1)", color:"#a855f7", border:"rgba(168,85,247,0.25)" } :
     r === "manager" ? { bg:"rgba(245,166,35,0.1)",  color:"#f5a623", border:"rgba(245,166,35,0.25)" } :
                       { bg:"rgba(96,165,250,0.1)",   color:"#60a5fa", border:"rgba(96,165,250,0.25)" };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold" style={{ color:"var(--soma-text)" }}>👥 Usuários</h1>
@@ -303,7 +284,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Alertas */}
       {success && (
         <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
           style={{ backgroundColor:"rgba(34,197,94,0.1)", border:"1px solid rgba(34,197,94,0.25)", color:"#22c55e" }}>
@@ -317,7 +297,6 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* Busca */}
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color:"var(--soma-muted)" }} />
         <input value={search} onChange={e => setSearch(e.target.value)}
@@ -325,7 +304,6 @@ export default function AdminUsers() {
           className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm focus:outline-none" style={inp} />
       </div>
 
-      {/* Formulário */}
       {showForm && (
         <div className="rounded-2xl border p-6 space-y-5" style={{ backgroundColor:"var(--soma-card)", borderColor:"#f5a623" }}>
           <div className="flex items-start justify-between">
@@ -334,14 +312,12 @@ export default function AdminUsers() {
                 {editId ? "✏️ Editar usuário" : "➕ Novo usuário"}
               </h2>
               <p className="text-xs mt-0.5" style={{ color:"var(--soma-muted)" }}>
-                {editId
-                  ? "Atualize os dados. Para redefinir senha use o botão 'Senha' na listagem."
-                  : "Preencha os dados. O colaborador já pode fazer login imediatamente."}
+                {editId ? "Atualize os dados. Para senha use o botão 'Senha' na listagem."
+                        : "Preencha os dados. O colaborador pode fazer login imediatamente."}
               </p>
             </div>
             <button onClick={closeForm} style={{ color:"var(--soma-muted)" }}><X size={18} /></button>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label style={lbl}>Nome completo *</label>
@@ -349,13 +325,12 @@ export default function AdminUsers() {
                 onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} />
             </div>
             <div>
-              <label style={lbl}>E-mail *</label>
-              <input style={{ ...inp, opacity: editId ? 0.7 : 1 }} type="email" value={form.email}
+              <label style={lbl}>E-mail {!editId && "*"}</label>
+              <input style={{ ...inp, opacity: editId ? 0.6 : 1 }} type="email" value={form.email}
                 placeholder="colaborador@somaprime.com" readOnly={!!editId}
                 onChange={e => !editId && setForm(f => ({ ...f, email: e.target.value }))} />
-              {editId && <p className="text-xs mt-1" style={{ color:"var(--soma-muted)" }}>E-mail não pode ser alterado após criação.</p>}
             </div>
-            {!editId && (
+            {!editId ? (
               <div>
                 <label style={lbl}>Senha *</label>
                 <div className="relative">
@@ -368,14 +343,11 @@ export default function AdminUsers() {
                   </button>
                 </div>
               </div>
-            )}
-            {editId && (
+            ) : (
               <div className="flex items-center gap-2 rounded-xl px-3"
                 style={{ backgroundColor:"rgba(96,165,250,0.06)", border:"1px solid rgba(96,165,250,0.2)" }}>
                 <Lock size={13} style={{ color:"#60a5fa" }} />
-                <p className="text-xs" style={{ color:"#60a5fa" }}>
-                  Para trocar senha, use o botão "Senha" na listagem.
-                </p>
+                <p className="text-xs" style={{ color:"#60a5fa" }}>Use o botão "Senha" na listagem para resetar.</p>
               </div>
             )}
             <div>
@@ -397,12 +369,11 @@ export default function AdminUsers() {
               </select>
             </div>
           </div>
-
           <div className="flex gap-3 pt-1">
             <button onClick={handleSave} disabled={loading}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 hover:opacity-90"
               style={{ backgroundColor:"#f5a623", color:"#000" }}>
-              <Check size={14} /> {loading ? "Salvando..." : editId ? "Salvar alterações" : "Criar usuário"}
+              <Check size={14} /> {loading ? "Salvando..." : editId ? "Salvar" : "Criar usuário"}
             </button>
             <button onClick={closeForm} className="px-5 py-2.5 rounded-xl text-sm hover:opacity-70"
               style={{ border:"1px solid var(--soma-border)", color:"var(--soma-muted)" }}>
@@ -412,23 +383,20 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* Lista */}
       <div className="space-y-2">
         {filtered.length === 0 && (
           <div className="text-center py-14 rounded-2xl border" style={{ borderColor:"var(--soma-border)" }}>
             <p className="text-sm" style={{ color:"var(--soma-muted)" }}>
-              {search ? "Nenhum usuário encontrado." : "Nenhum usuário cadastrado ainda."}
+              {search ? "Nenhum usuário encontrado." : "Nenhum usuário cadastrado."}
             </p>
           </div>
         )}
-
         {filtered.map(u => {
           const rc = roleColor(u.role);
           const isExpanded = expandedUser === u.id;
           return (
             <div key={u.id} className="rounded-2xl border overflow-hidden"
               style={{ backgroundColor:"var(--soma-card)", borderColor: isExpanded ? "#f5a623" : "var(--soma-border)" }}>
-
               <div className="flex items-center gap-3 px-4 py-3">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
                   style={{ backgroundColor:"rgba(245,166,35,0.15)", color:"#f5a623" }}>
@@ -443,17 +411,14 @@ export default function AdminUsers() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                    <span className="text-xs flex items-center gap-1"
-                      style={{ color: u.email ? "var(--soma-muted)" : "#f87171" }}>
-                      <Mail size={10} />
-                      {u.email || "sem e-mail"}
+                    <span className="text-xs flex items-center gap-1" style={{ color: u.email ? "var(--soma-muted)" : "#f87171" }}>
+                      <Mail size={10} /> {u.email || "sem e-mail"}
                     </span>
                     <span className="text-xs" style={{ color:"var(--soma-muted)" }}>
                       {sectorLabel(u.sector)} · {companyLabel(u.company)}
                     </span>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                   <button onClick={() => openEdit(u)}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:opacity-80"
@@ -486,7 +451,6 @@ export default function AdminUsers() {
                   </button>
                 </div>
               </div>
-
               {isExpanded && (
                 <div className="px-4 pb-4 border-t" style={{ borderColor:"var(--soma-border)" }}>
                   <TrilhaSelector userId={u.id} company={u.company} />
@@ -500,8 +464,8 @@ export default function AdminUsers() {
       {users.length > 0 && (
         <div className="text-xs space-y-1" style={{ color:"var(--soma-muted)" }}>
           <p>🔒 <strong>Senha</strong> — envia link de redefinição por e-mail</p>
-          <p>🔄 <strong>Reset</strong> — apaga todo o progresso e certificados</p>
-          <p>📚 <strong>Trilhas</strong> — controla quais trilhas o colaborador acessa</p>
+          <p>🔄 <strong>Reset</strong> — apaga progresso, quizzes e certificados</p>
+          <p>📚 <strong>Trilhas</strong> — controla acesso às trilhas</p>
         </div>
       )}
     </div>

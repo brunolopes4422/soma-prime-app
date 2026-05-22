@@ -165,7 +165,7 @@ export default function AdminUsers() {
   function openNew() { setEditId(null); setForm(emptyForm); setError(""); setShowForm(true); }
   function openEdit(u: UserProfile) {
     setEditId(u.id);
-    setForm({ full_name:u.full_name, email:u.email ?? "", password:"", company:u.company, role:u.role, sector:u.sector ?? "cs" });
+    setForm({ full_name:u.full_name, email:u.email ?? "", password:"", newPassword:"", company:u.company, role:u.role, sector:u.sector ?? "cs" });
     setError(""); setShowForm(true);
   }
   function closeForm() { setShowForm(false); setEditId(null); setForm(emptyForm); setShowPass(false); }

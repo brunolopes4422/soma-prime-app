@@ -46,17 +46,26 @@ export default function Trilhas() {
   const [trilhas, setTrilhas]         = useState<Trilha[]>([]);
   const [certificates, setCertificates] = useState<string[]>([]);
   const [progress, setProgress]       = useState<Record<string, number>>({});
+  const [duracaoMap, setDuracaoMap]   = useState<Record<string, number>>({});
   const [loading, setLoading]         = useState(true);
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) return;
     async function load() {
-      // Trilhas da empresa
+      // Trilhas da empresa com duração das aulas
       const { data: trilhasData } = await supabase
-        .from("trilhas").select("*")
+        .from("trilhas").select("*, modules(lessons(duration_min))")
         .eq("company", profile!.company)
         .order("sector").order("order_num");
+
+      // Monta mapa de carga horária por trilha
+      const duracaoMapLocal: Record<string, number> = {};
+      (trilhasData ?? []).forEach((t: any) => {
+        const totalMin = (t.modules ?? []).reduce((a: number, m: any) =>
+          a + (m.lessons ?? []).reduce((b: number, l: any) => b + (l.duration_min ?? 10), 0), 0);
+        duracaoMapLocal[t.id] = Math.ceil(totalMin / 60);
+      });
 
       // Verifica se há controle de acesso — se sim, filtra
       const { data: accessData } = await supabase
@@ -91,6 +100,7 @@ export default function Trilhas() {
       });
 
       setTrilhas(filteredTrilhas);
+      setDuracaoMap(duracaoMapLocal);
       setCertificates((certsData ?? []).map(c => c.trilha_id));
       setProgress(prog);
       setLoading(false);
@@ -212,10 +222,17 @@ export default function Trilhas() {
                       <div className="relative space-y-4">
                         {/* Topo: badge nível + ícone status */}
                         <div className="flex items-start justify-between">
-                          <span className="text-xs px-2.5 py-1 rounded-full font-semibold border"
-                            style={{ backgroundColor: lc.bg, color: lc.text, borderColor: lc.border }}>
-                            {levelLabel[trilha.level]}
-                          </span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs px-2.5 py-1 rounded-full font-semibold border"
+                              style={{ backgroundColor: lc.bg, color: lc.text, borderColor: lc.border }}>
+                              {levelLabel[trilha.level]}
+                            </span>
+                            {duracaoMap[trilha.id] > 0 && (
+                              <span className="text-xs flex items-center gap-1" style={{ color: "var(--soma-muted)" }}>
+                                🕐 {duracaoMap[trilha.id]}h
+                              </span>
+                            )}
+                          </div>
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                             style={{ backgroundColor: isCompleted ? "rgba(34,197,94,0.12)" : isLocked ? "var(--soma-bg)" : lc.bg }}>
                             {isCompleted

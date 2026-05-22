@@ -6,14 +6,13 @@ interface CertificadoProps {
   trilha: string;
   sector: string;
   nivel: string;
-  empresa?: string;
   dataEmissao: string;
   nota?: number;
   cargaHoraria?: number;
   onClose: () => void;
 }
 
-export default function Certificado({ colaborador, trilha, sector, nivel, empresa, dataEmissao, nota, cargaHoraria, onClose }: CertificadoProps) {
+export default function Certificado({ colaborador, trilha, sector, nivel, dataEmissao, nota, cargaHoraria, onClose }: CertificadoProps) {
   const certRef = useRef<HTMLDivElement>(null);
 
   async function handleDownload() {

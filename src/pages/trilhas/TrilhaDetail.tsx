@@ -688,7 +688,7 @@ export default function TrilhaDetail() {
   // Carrega nota da avaliação final ao inicializar
   useEffect(() => {
     if (!profile || !id || !modules.length) return;
-    const allLessons = modules.flatMap(m => m.lessons as any[]);
+    const allLessons = modules.flatMap(m => m.lessons) as any[];
     const avFinal = (allLessons as any[]).find((l: any) => l.title?.toLowerCase().includes("avaliação final"));
     if (!avFinal) return;
     supabase.from("trilha_quiz_results")
@@ -729,7 +729,7 @@ export default function TrilhaDetail() {
   const activeModule = modules.find(m => m.lessons.some((l: any) => l.id === activeLessonId));
 
   // Aula anterior / próxima
-  const allLessons = modules.flatMap(m => m.lessons as any[]);
+  const allLessons = modules.flatMap(m => m.lessons) as any[];
   const currentIndex = allLessons.findIndex(l => l.id === activeLessonId);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
@@ -748,7 +748,7 @@ export default function TrilhaDetail() {
     setCertLoading(true);
 
     // Busca avaliação final
-    const allLessons = modules.flatMap(m => m.lessons as any[]);
+    const allLessons = modules.flatMap(m => m.lessons) as any[];
     const avaliacaoFinal = allLessons.find((l: any) =>
       l.title?.toLowerCase().includes("avaliação final")
     );

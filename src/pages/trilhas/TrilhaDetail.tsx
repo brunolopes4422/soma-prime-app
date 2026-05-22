@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
@@ -381,11 +381,26 @@ function LessonContent({ content }: { content: string }) {
 
 
 // ─── QUIZ INTERATIVO ──────────────────────────────────────────────────────────
+// Embaralha array sem mutar o original
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function QuizBlock({ lesson, trilhaId, userId }: { lesson: any; trilhaId: string; userId: string }) {
   const rawQuiz = lesson?.quiz_data;
-  const questions: any[] = rawQuiz
-    ? Array.isArray(rawQuiz) ? rawQuiz : [rawQuiz]
-    : [];
+  // Embaralha perguntas e opções uma vez ao montar (useMemo para não re-embaralhar a cada render)
+  const questions: any[] = useMemo(() => {
+    const raw = rawQuiz ? (Array.isArray(rawQuiz) ? rawQuiz : [rawQuiz]) : [];
+    return shuffle(raw).map(q => ({
+      ...q,
+      options: shuffle(q.options ?? []),
+    }));
+  }, [lesson?.id]); // Só reembaralha ao trocar de aula
 
   const isFinal = lesson?.title?.toLowerCase().includes("avaliação final");
   const MAX_TENTATIVAS = isFinal ? 3 : Infinity;

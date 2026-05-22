@@ -36,7 +36,7 @@ const SECTORS = [
   { key: "bpo",            label: "BPO / Financeiro" },
 ];
 const LEVEL_LABEL: Record<number, string> = { 1:"Júnior", 2:"Pleno", 3:"Sênior", 4:"Gestor" };
-const emptyForm = { full_name:"", email:"", password:"", company:"soma_prime", role:"collaborator", sector:"cs" };
+const emptyForm = { full_name:"", email:"", password:"", newPassword:"", company:"soma_prime", role:"collaborator", sector:"cs" };
 
 const inp: React.CSSProperties = {
   backgroundColor:"var(--soma-bg)", border:"1px solid var(--soma-border)",
@@ -168,7 +168,7 @@ export default function AdminUsers() {
     setForm({ full_name:u.full_name, email:u.email ?? "", password:"", company:u.company, role:u.role, sector:u.sector ?? "cs" });
     setError(""); setShowForm(true);
   }
-  function closeForm() { setShowForm(false); setEditId(null); setForm(emptyForm); }
+  function closeForm() { setShowForm(false); setEditId(null); setForm(emptyForm); setShowPass(false); }
   function flash(msg: string, err = false) {
     if (err) { setError(msg); setTimeout(() => setError(""), 5000); }
     else { setSuccess(msg); setTimeout(() => setSuccess(""), 3000); }
@@ -179,8 +179,7 @@ export default function AdminUsers() {
     if (!form.full_name.trim()) return flash("Preencha o nome.", true);
     setLoading(true);
 
-    if (!editId) {
-      if (!form.email.trim()) { setLoading(false); return flash("Preencha o e-mail.", true); }
+    if (!editId) {      if (!form.email.trim()) { setLoading(false); return flash("Preencha o e-mail.", true); }
       if (form.password.length < 6) { setLoading(false); return flash("Senha mínimo 6 caracteres.", true); }
 
       // Usa supabaseAdmin (service role) — cria usuário sem afetar sessão do admin
@@ -222,7 +221,18 @@ export default function AdminUsers() {
         role: form.role,
         sector: form.sector || null,
       }).eq("id", editId);
-      flash("✅ Usuário atualizado!");
+
+      // Troca senha se preenchida
+      if (form.newPassword.trim()) {
+        if (form.newPassword.length < 6) { setLoading(false); return flash("Nova senha mínimo 6 caracteres.", true); }
+        const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(editId, {
+          password: form.newPassword,
+        });
+        if (pwErr) flash("Perfil atualizado, mas erro ao trocar senha: " + pwErr.message, true);
+        else flash("✅ Usuário e senha atualizados!");
+      } else {
+        flash("✅ Usuário atualizado!");
+      }
     }
     closeForm(); loadUsers(); setLoading(false);
   }
@@ -344,10 +354,17 @@ export default function AdminUsers() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 rounded-xl px-3"
-                style={{ backgroundColor:"rgba(96,165,250,0.06)", border:"1px solid rgba(96,165,250,0.2)" }}>
-                <Lock size={13} style={{ color:"#60a5fa" }} />
-                <p className="text-xs" style={{ color:"#60a5fa" }}>Use o botão "Senha" na listagem para resetar.</p>
+              <div>
+                <label style={lbl}>Nova senha <span style={{ color:"var(--soma-muted)" }}>(opcional)</span></label>
+                <div className="relative">
+                  <input style={{ ...inp, paddingRight:36 }} type={showPass ? "text" : "password"}
+                    value={form.newPassword} placeholder="Deixe vazio para não alterar"
+                    onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))} />
+                  <button type="button" onClick={() => setShowPass(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color:"var(--soma-muted)" }}>
+                    {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
             )}
             <div>
